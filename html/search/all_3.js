@@ -1,0 +1,25 @@
+var searchData=
+[
+  ['3_200_0',['3 0',['..//github/workspace/ChangeLog.md#autotoc_md30',1,'BUGFIX PATCHES TO 3.0'],['../md_README.html#autotoc_md101',1,'TinyMUSH 3.0']]],
+  ['3_200_20changes_1',['TinyMUSH 3.0 Changes',['../md_ChangeLog.html#autotoc_md25',1,'']]],
+  ['3_200_20credits_2',['TinyMUSH 3.0 Credits',['../md_AUTHORS.html#autotoc_md3',1,'']]],
+  ['3_200_20patchlevel_201_20december_205th_202001_3',['3.0 Patchlevel 1 (December 5th, 2001)',['..//github/workspace/ChangeLog.md#autotoc_md31',1,'']]],
+  ['3_200_20patchlevel_202_20january_2026th_202001_4',['3.0 Patchlevel 2 (January 26th, 2001)',['..//github/workspace/ChangeLog.md#autotoc_md32',1,'']]],
+  ['3_200_20patchlevel_203_20october_2021st_202001_5',['3.0 Patchlevel 3 (October 21st, 2001)',['..//github/workspace/ChangeLog.md#autotoc_md33',1,'']]],
+  ['3_200_20patchlevel_204_20june_208th_202002_6',['3.0 Patchlevel 4 (June 8th, 2002)',['..//github/workspace/ChangeLog.md#autotoc_md34',1,'']]],
+  ['3_201_7',['TinyMUSH 3.1',['../md_README.html#autotoc_md102',1,'']]],
+  ['3_201_20changes_8',['TinyMUSH 3.1 Changes',['../md_ChangeLog.html#autotoc_md10',1,'']]],
+  ['3_201_20patchlevel_201_20ndash_20august_2011th_202004_9',['3.1 Patchlevel 1 &amp;ndash; August 11th, 2004',['../md_ChangeLog.html#autotoc_md17',1,'']]],
+  ['3_201_20patchlevel_202_10',['3.1 Patchlevel 2',['../md_ChangeLog.html#autotoc_md16',1,'']]],
+  ['3_201_20patchlevel_203_11',['3.1 Patchlevel 3',['../md_ChangeLog.html#autotoc_md15',1,'']]],
+  ['3_201_20patchlevel_204_20ndash_20december_2019th_202006_12',['3.1 Patchlevel 4 &amp;ndash; December 19th, 2006',['../md_ChangeLog.html#autotoc_md14',1,'']]],
+  ['3_201_20patchlevel_205_20ndash_20january_2027th_202008_13',['3.1 Patchlevel 5 &amp;ndash; January 27th, 2008',['../md_ChangeLog.html#autotoc_md13',1,'']]],
+  ['3_201_20patchlevel_206_20ndash_20january_2012th_202009_14',['3.1 Patchlevel 6 &amp;ndash; January 12th, 2009',['../md_ChangeLog.html#autotoc_md12',1,'']]],
+  ['3_201_20release_15',['PATCHES SINCE THE 3.1 RELEASE',['../md_ChangeLog.html#autotoc_md11',1,'']]],
+  ['3_202_16',['TinyMUSH 3.2',['../md_README.html#autotoc_md103',1,'']]],
+  ['3_202_20changes_17',['TinyMUSH 3.2 Changes',['../md_ChangeLog.html#autotoc_md9',1,'']]],
+  ['3_202_20credits_18',['TinyMUSH 3.2 Credits',['../md_AUTHORS.html#autotoc_md2',1,'']]],
+  ['3_203_19',['TinyMUSH 3.3',['../md_README.html#autotoc_md104',1,'']]],
+  ['3_203_20changes_20',['TinyMUSH 3.3 Changes',['../md_ChangeLog.html#autotoc_md8',1,'']]],
+  ['3_203_20credits_21',['TinyMUSH 3.3 Credits',['../md_AUTHORS.html#autotoc_md1',1,'']]]
+];
