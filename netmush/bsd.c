@@ -40,6 +40,7 @@
  * @attention Since this is the core of the whole show, better keep theses globals.
  *
  */
+
 int sock = 0;				  /*!< Game socket */
 int ndescriptors = 0;		  /*!< New Descriptor */
 int maxd = 0;				  /*!< Max Descriptors */
@@ -59,15 +60,15 @@ key_t msgq_Key = 0; /*!< Message Queue Key */
  * @param addr IP address
  * @return MSGQ_DNSRESOLVER
  */
-MSGQ_DNSRESOLVER mk_msgq_dnsresolver(const char *addr)
-{
+
+MSGQ_DNSRESOLVER mk_msgq_dnsresolver(const char *addr) {
+
 	MSGQ_DNSRESOLVER h;
 	memset(&h, 0, sizeof(h));
 	h.destination = MSGQ_DEST_DNSRESOLVER;
 	h.payload.addrf = AF_UNSPEC;
 
-	if (addr)
-	{
+	if (addr) {
 
 		struct addrinfo hint, *res = NULL;
 
@@ -76,10 +77,8 @@ MSGQ_DNSRESOLVER mk_msgq_dnsresolver(const char *addr)
 		hint.ai_family = PF_UNSPEC;
 		hint.ai_flags = AI_NUMERICHOST;
 
-		if (!getaddrinfo(addr, NULL, &hint, &res))
-		{
-			switch (res->ai_family)
-			{
+		if (!getaddrinfo(addr, NULL, &hint, &res)) {
+			switch (res->ai_family) {
 			case AF_INET:
 				inet_pton(AF_INET, addr, &(h.payload.ip.v4));
 				h.payload.addrf = res->ai_family;
@@ -100,50 +99,40 @@ MSGQ_DNSRESOLVER mk_msgq_dnsresolver(const char *addr)
  * @param args Message queue key
  * @return void* Always null. Not used.
  */
-void *dnsResolver(void *args)
-{
+
+void *dnsResolver(void *args) {
+
 	MSGQ_DNSRESOLVER msgData;
 	int msgQID = msgget(*((key_t *)args), 0666 | IPC_CREAT);
 
-	do
-	{
+	do {
 		memset(&msgData, 0, sizeof(msgData));
 		msgrcv(msgQID, &msgData, sizeof(msgData.payload), MSGQ_DEST_DNSRESOLVER, 0);
 
-		if ((msgData.payload.addrf == AF_INET) || (msgData.payload.addrf == AF_INET6))
-		{
+		if ((msgData.payload.addrf == AF_INET) || (msgData.payload.addrf == AF_INET6)) {
 			MSGQ_DNSRESOLVER clbData = msgData;
 			struct hostent *hostEnt = NULL;
 			clbData.destination = MSGQ_DEST_REPLY - MSGQ_DEST_DNSRESOLVER;
 			clbData.payload.hostname = NULL;
 
-			switch (msgData.payload.addrf)
-			{
+			switch (msgData.payload.addrf) {
 			case AF_INET:
 				hostEnt = gethostbyaddr(&(msgData.payload.ip.v4), sizeof(msgData.payload.ip.v4), AF_INET);
-				if (hostEnt)
-				{
+				if (hostEnt) {
 					if (hostEnt->h_name)
-					{
 						clbData.payload.hostname = strdup(hostEnt->h_name);
-					}
 				}
 				break;
 			case AF_INET6:
 				hostEnt = gethostbyaddr(&(msgData.payload.ip.v6), sizeof(msgData.payload.ip.v6), AF_INET6);
-				if (hostEnt)
-				{
+				if (hostEnt) {
 					if (hostEnt->h_name)
-					{
 						clbData.payload.hostname = strdup(hostEnt->h_name);
-					}
 				}
 				break;
 			}
 			if (clbData.payload.hostname)
-			{
 				msgsnd(msgQID, &clbData, sizeof(clbData.payload), 0);
-			}
 		}
 	} while ((msgData.payload.addrf == AF_INET) || (msgData.payload.addrf == AF_INET6));
 
@@ -154,8 +143,8 @@ void *dnsResolver(void *args)
 	return NULL;
 }
 
-void check_dnsResolver_status(dbref player, __attribute__((unused)) dbref cause, __attribute__((unused)) int key)
-{
+void check_dnsResolver_status(dbref player, __attribute__((unused)) dbref cause, __attribute__((unused)) int key) {
+
 	/**
 	 * @todo Just a placeholder for now. Call by @startslave
 	 * that should also be rename to something better suiting
@@ -171,33 +160,29 @@ void check_dnsResolver_status(dbref player, __attribute__((unused)) dbref cause,
  * @param port Port for the socket
  * @return int file descriptor of the socket
  */
-int make_socket(int port)
-{
+
+int make_socket(int port) {
+
 	int s = 0, opt = 0;
 	struct sockaddr_in server;
 
 	s = socket(AF_INET, SOCK_STREAM, 0);
 
-	if (s < 0)
-	{
+	if (s < 0) {
 		log_perror("NET", "FAIL", NULL, "creating master socket");
 		exit(EXIT_FAILURE);
 	}
-
 	opt = 1;
 
 	if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0)
-	{
 		log_perror("NET", "FAIL", NULL, "setsockopt");
-	}
 
 	server.sin_family = AF_INET;
 	server.sin_addr.s_addr = INADDR_ANY;
 	server.sin_port = (unsigned short)htons((unsigned short)port);
 
 	if (!mushstate.restarting)
-		if (bind(s, (struct sockaddr *)&server, sizeof(server)))
-		{
+		if (bind(s, (struct sockaddr *)&server, sizeof(server))) {
 			log_perror("NET", "FAIL", NULL, "bind");
 			close(s);
 			exit(EXIT_FAILURE);
@@ -212,8 +197,9 @@ int make_socket(int port)
  *
  * @param port Port to listen
  */
-void shovechars(int port)
-{
+
+void shovechars(int port) {
+
 	fd_set input_set, output_set;
 	struct timeval last_slice, current_time, next_slice, timeout;
 	int found = 0, check = 0;
@@ -228,14 +214,10 @@ void shovechars(int port)
 	mushstate.debug_cmd = (char *)"< shovechars >";
 
 	if (!mushstate.restarting)
-	{
 		sock = make_socket(port);
-	}
 
 	if (!mushstate.restarting)
-	{
 		maxd = sock + 1;
-	}
 
 	gettimeofday(&last_slice, NULL);
 
@@ -263,29 +245,22 @@ void shovechars(int port)
 	 * @attention This is the main loop of the MUSH, everything derive from here...
 	 *
 	 */
-	while (mushstate.shutdown_flag == 0)
-	{
+	while (mushstate.shutdown_flag == 0) {
 		gettimeofday(&current_time, NULL);
 
 		last_slice = update_quotas(last_slice, current_time);
 		process_commands();
 
 		if (mushstate.shutdown_flag)
-		{
 			break;
-		}
 		/**
 		 * We've gotten a signal to dump flatfiles
 		 *
 		 */
-		if (mushstate.flatfile_flag && !mushstate.dumping)
-		{
-			if (mushconf.dump_msg)
-			{
+		if (mushstate.flatfile_flag && !mushstate.dumping) {
+			if (mushconf.dump_msg) {
 				if (*mushconf.dump_msg)
-				{
 					raw_broadcast(0, "%s", mushconf.dump_msg);
-				}
 			}
 
 			mushstate.dumping = 1;
@@ -293,12 +268,9 @@ void shovechars(int port)
 			dump_database_internal(DUMP_DB_FLATFILE);
 			mushstate.dumping = 0;
 
-			if (mushconf.postdump_msg)
-			{
+			if (mushconf.postdump_msg) {
 				if (*mushconf.postdump_msg)
-				{
 					raw_broadcast(0, "%s", mushconf.postdump_msg);
-				}
 			}
 
 			mushstate.flatfile_flag = 0;
@@ -324,25 +296,18 @@ void shovechars(int port)
 		 *
 		 */
 		if (ndescriptors < avail_descriptors)
-		{
 			FD_SET(sock, &input_set);
-		}
 
 		/**
 		 * Mark sockets that we want to test for change in status
 		 *
 		 */
-		for (d = descriptor_list; (d); d = (d)->next)
-		{
+		for (d = descriptor_list; (d); d = (d)->next) {
 			if (!d->input_head)
-			{
 				FD_SET(d->descriptor, &input_set);
-			}
 
 			if (d->output_head)
-			{
 				FD_SET(d->descriptor, &output_set);
-			}
 		}
 		/**
 		 * Wait for something to happen
@@ -350,10 +315,8 @@ void shovechars(int port)
 		 */
 		found = select(maxd, &input_set, &output_set, (fd_set *)NULL, &timeout);
 
-		if (found < 0)
-		{
-			if (errno == EBADF)
-			{
+		if (found < 0) {
+			if (errno == EBADF) {
 				/**
 				 * This one is bad, as it results in a spiral
 				 * of doom, unless we can figure out what the bad file
@@ -362,10 +325,8 @@ void shovechars(int port)
 				 */
 				log_perror("NET", "FAIL", "checking for activity", "select");
 
-				for (d = descriptor_list; (d); d = (d)->next)
-				{
-					if (fstat(d->descriptor, &fstatbuf) < 0)
-					{
+				for (d = descriptor_list; (d); d = (d)->next) {
+					if (fstat(d->descriptor, &fstatbuf) < 0) {
 						/**
 						 * It's a player. Just toss the connection.
 						 *
@@ -375,8 +336,7 @@ void shovechars(int port)
 					}
 				}
 
-				if ((sock != -1) && (fstat(sock, &fstatbuf) < 0))
-				{
+				if ((sock != -1) && (fstat(sock, &fstatbuf) < 0)) {
 					/**
 					 * We didn't figured it out, well that's it, game over.
 					 *
@@ -386,9 +346,7 @@ void shovechars(int port)
 				}
 			}
 			else if (errno != EINTR)
-			{
 				log_perror("NET", "FAIL", "checking for activity", "select");
-			}
 
 			continue;
 		}
@@ -396,50 +354,36 @@ void shovechars(int port)
 		 * if !found then time for robot commands
 		 *
 		 */
-		if (!found)
-		{
+		if (!found) {
 			if (mushconf.queue_chunk)
-			{
 				do_top(mushconf.queue_chunk);
-			}
 
 			continue;
 		}
 		else
-		{
 			do_top(mushconf.active_q_chunk);
-		}
 
 		/**
 		 * @brief Check if we have something from the DNS Resolver.
 		 *
 		 */
 
-		if (msgrcv(msgq_Id, &msgq_Dns, sizeof(msgq_Dns.payload), MSGQ_DEST_REPLY - MSGQ_DEST_DNSRESOLVER, IPC_NOWAIT) > 0)
-		{
-			if (mushconf.use_hostname)
-			{
-				for (DESC *d = descriptor_list; d; d = d->next)
-				{
+		if (msgrcv(msgq_Id, &msgq_Dns, sizeof(msgq_Dns.payload), MSGQ_DEST_REPLY - MSGQ_DEST_DNSRESOLVER, IPC_NOWAIT) > 0) {
+			if (mushconf.use_hostname) {
+				for (DESC *d = descriptor_list; d; d = d->next) {
 					struct in_addr daddr;
 					inet_pton(AF_INET, d->addr, &daddr);
 					if (msgq_Dns.payload.ip.v4.s_addr != daddr.s_addr)
-					{
 						continue;
-					}
 
-					if (d->player != 0)
-					{
-						if (d->username[0])
-						{
+					if (d->player != 0) {
+						if (d->username[0]) {
 							char *s = XASPRINTF("s", "%s@%s", d->username, msgq_Dns.payload.hostname);
 							atr_add_raw(d->player, A_LASTSITE, s);
 							XFREE(s);
 						}
 						else
-						{
 							atr_add_raw(d->player, A_LASTSITE, msgq_Dns.payload.hostname);
-						}
 					}
 
 					XSTRNCPY(d->addr, msgq_Dns.payload.hostname, 50);
@@ -452,45 +396,35 @@ void shovechars(int port)
 		 * Check for new connection requests
 		 *
 		 */
-		if (FD_ISSET(sock, &input_set))
-		{
+		if (FD_ISSET(sock, &input_set)) {
 			newd = new_connection(sock);
 
-			if (!newd)
-			{
+			if (!newd) {
 				check = (errno && (errno != EINTR) && (errno != EMFILE) && (errno != ENFILE));
 
 				if (check)
-				{
 					log_perror("NET", "FAIL", NULL, "new_connection");
-				}
 			}
-			else
-			{
+			else {
 				if (newd->descriptor >= maxd)
-				{
 					maxd = newd->descriptor + 1;
-				}
 			}
 		}
 		/**
 		 * Check for activity on user sockets
 		 *
 		 */
-		for (d = descriptor_list, dnext = ((d != NULL) ? d->next : NULL); d; d = dnext, dnext = ((dnext != NULL) ? dnext->next : NULL))
-		{
+		for (d = descriptor_list, dnext = ((d != NULL) ? d->next : NULL); d; d = dnext, dnext = ((dnext != NULL) ? dnext->next : NULL)) {
 			/**
 			 * Process input from sockets with pending input
 			 *
 			 */
-			if (FD_ISSET(d->descriptor, &input_set))
-			{
+			if (FD_ISSET(d->descriptor, &input_set)) {
 				/**
 				 * Undo AutoDark
 				 *
 				 */
-				if (d->flags & DS_AUTODARK)
-				{
+				if (d->flags & DS_AUTODARK) {
 					d->flags &= ~DS_AUTODARK;
 					s_Flags(d->player, Flags(d->player) & ~DARK);
 				}
@@ -498,8 +432,7 @@ void shovechars(int port)
 				 * Process received data
 				 *
 				 */
-				if (!process_input(d))
-				{
+				if (!process_input(d)) {
 					shutdownsock(d, R_SOCKDIED);
 					continue;
 				}
@@ -508,12 +441,9 @@ void shovechars(int port)
 			 * Process output for sockets with pending output
 			 *
 			 */
-			if (FD_ISSET(d->descriptor, &output_set))
-			{
+			if (FD_ISSET(d->descriptor, &output_set)) {
 				if (!process_output(d))
-				{
 					shutdownsock(d, R_SOCKDIED);
-				}
 			}
 		}
 	}
@@ -543,8 +473,9 @@ void shovechars(int port)
  * @param sock		Socket to listen for new connections
  * @return DESC*	Connection descriptor
  */
-DESC *new_connection(int sock)
-{
+
+DESC *new_connection(int sock) {
+
 	int newsock = 0;
 	char *cmdsave = NULL;
 	DESC *d = NULL;
@@ -559,12 +490,9 @@ DESC *new_connection(int sock)
 	newsock = accept(sock, (struct sockaddr *)&addr, &addr_len);
 
 	if (newsock < 0)
-	{
 		return 0;
-	}
 
-	if (site_check(addr.sin_addr, mushstate.access_list) & H_FORBIDDEN)
-	{
+	if (site_check(addr.sin_addr, mushstate.access_list) & H_FORBIDDEN) {
 		log_write(LOG_NET | LOG_SECURITY, "NET", "SITE", "[%d/%s] Connection refused.  (Remote port %d)", newsock, inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 		fcache_rawdump(newsock, FC_CONN_SITE);
 		shutdown(newsock, 2);
@@ -572,8 +500,7 @@ DESC *new_connection(int sock)
 		errno = 0;
 		d = NULL;
 	}
-	else
-	{
+	else {
 		/**
 		 * @brief Ask DNS Resolver for hostname
 		 *
@@ -599,10 +526,10 @@ DESC *new_connection(int sock)
  * @param reason reason ID
  * @return char* reason message
  */
-char *connReasons(int reason)
-{
-	switch (reason)
-	{
+
+char *connReasons(int reason) {
+
+	switch (reason) {
 	case 0:
 		return "Unspecified";
 	case 1:
@@ -641,10 +568,9 @@ char *connReasons(int reason)
  * @param message reason ID
  * @return char* reason message
  */
-char *connMessages(int reason)
-{
-	switch (reason)
-	{
+char *connMessages(int reason) {
+
+	switch (reason) {
 	case 0:
 		return "unknown";
 	case 1:
@@ -681,31 +607,27 @@ char *connMessages(int reason)
  * @param d			Connection descriptor
  * @param reason	Reason for disconnection
  */
-void shutdownsock(DESC *d, int reason)
-{
+
+void shutdownsock(DESC *d, int reason) {
+
 	char *buff = NULL, *buff2 = NULL;
 	time_t now = 0L;
 	int ncon = 0;
 	DESC *dtemp = NULL;
 
 	if ((reason == R_LOGOUT) && (site_check((d->address).sin_addr, mushstate.access_list) & H_FORBIDDEN))
-	{
 		reason = R_QUIT;
-	}
 
 	buff = log_getname(d->player);
 
-	if (d->flags & DS_CONNECTED)
-	{
+	if (d->flags & DS_CONNECTED) {
 		/**
 		 * Do the disconnect stuff if we aren't doing a LOGOUT (which
 		 * keeps the connection open so the player can connect to a different
 		 * character).
 		 */
-		if (reason != R_LOGOUT)
-		{
-			if (reason != R_SOCKDIED)
-			{
+		if (reason != R_LOGOUT) {
+			if (reason != R_SOCKDIED) {
 				/**
 				 * If the socket died, there's no reason to
 				 * display the quit file.
@@ -716,8 +638,7 @@ void shutdownsock(DESC *d, int reason)
 
 			log_write(LOG_NET | LOG_LOGIN, "NET", "DISC", "[%d/%s] Logout by %s <%s: %d cmds, %d bytes in, %d bytes out, %d secs>", d->descriptor, d->addr, buff, connReasons(reason), d->command_count, d->input_tot, d->output_tot, (int)(time(NULL) - d->connected_at));
 		}
-		else
-		{
+		else {
 			log_write(LOG_NET | LOG_LOGIN, "NET", "LOGO", "[%d/%s] Logout by %s <%s: %d cmds, %d bytes in, %d bytes out, %d secs>", d->descriptor, d->addr, buff, connReasons(reason), d->command_count, d->input_tot, d->output_tot, (int)(time(NULL) - d->connected_at));
 		}
 		/**
@@ -731,12 +652,9 @@ void shutdownsock(DESC *d, int reason)
 		XFREE(buff2);
 		announce_disconnect(d->player, d, connMessages(reason));
 	}
-	else
-	{
+	else {
 		if (reason == R_LOGOUT)
-		{
 			reason = R_QUIT;
-		}
 
 		log_write(LOG_SECURITY | LOG_NET, "NET", "DISC", "[%d/%s] Connection closed, never connected. <Reason: %s>", d->descriptor, d->addr, connReasons(reason));
 	}
@@ -750,31 +668,25 @@ void shutdownsock(DESC *d, int reason)
 	 *
 	 *
 	 */
-	if (d->program_data)
-	{
+	if (d->program_data) {
 		ncon = 0;
 
-		for (dtemp = (DESC *)nhashfind((int)d->player, &mushstate.desc_htab); dtemp; dtemp = dtemp->hashnext)
-		{
+		for (dtemp = (DESC *)nhashfind((int)d->player, &mushstate.desc_htab); dtemp; dtemp = dtemp->hashnext) {
 			ncon++;
 		}
 
-		if (ncon == 0)
-		{
+		if (ncon == 0) {
 			/**
 			 * Free_RegData
 			 *
 			 */
-			if (d->program_data->wait_data)
-			{
-				for (int z = 0; z < d->program_data->wait_data->q_alloc; z++)
-				{
+			if (d->program_data->wait_data) {
+				for (int z = 0; z < d->program_data->wait_data->q_alloc; z++) {
 					if (d->program_data->wait_data->q_regs[z])
 						XFREE(d->program_data->wait_data->q_regs[z]);
 				}
 
-				for (int z = 0; z < d->program_data->wait_data->xr_alloc; z++)
-				{
+				for (int z = 0; z < d->program_data->wait_data->xr_alloc; z++) {
 					if (d->program_data->wait_data->x_names[z])
 						XFREE(d->program_data->wait_data->x_names[z]);
 
@@ -787,29 +699,19 @@ void shutdownsock(DESC *d, int reason)
 				 *
 				 */
 				if (d->program_data->wait_data->q_regs)
-				{
 					XFREE(d->program_data->wait_data->q_regs);
-				}
 
 				if (d->program_data->wait_data->q_lens)
-				{
 					XFREE(d->program_data->wait_data->q_lens);
-				}
 
 				if (d->program_data->wait_data->x_names)
-				{
 					XFREE(d->program_data->wait_data->x_names);
-				}
 
 				if (d->program_data->wait_data->x_regs)
-				{
 					XFREE(d->program_data->wait_data->x_regs);
-				}
 
 				if (d->program_data->wait_data->x_lens)
-				{
 					XFREE(d->program_data->wait_data->x_lens);
-				}
 
 				XFREE(d->program_data->wait_data);
 			}
@@ -821,8 +723,7 @@ void shutdownsock(DESC *d, int reason)
 		d->program_data = NULL;
 	}
 
-	if (d->colormap)
-	{
+	if (d->colormap) {
 		XFREE(d->colormap);
 		d->colormap = NULL;
 	}
@@ -836,8 +737,7 @@ void shutdownsock(DESC *d, int reason)
 		d->timeout = mushconf.idle_timeout;
 		d->player = 0;
 
-		if (d->doing)
-		{
+		if (d->doing) {
 			XFREE(d->doing);
 			d->doing = NULL;
 		}
@@ -849,17 +749,14 @@ void shutdownsock(DESC *d, int reason)
 		d->output_tot = 0;
 		welcome_user(d);
 	}
-	else
-	{
+	else {
 		shutdown(d->descriptor, 2);
 		close(d->descriptor);
 		freeqs(d);
 		*d->prev = d->next;
 
 		if (d->next)
-		{
 			d->next->prev = d->prev;
-		}
 
 		XFREE(d);
 		ndescriptors--;
@@ -871,29 +768,24 @@ void shutdownsock(DESC *d, int reason)
  *
  * @param s		Socket to modify.
  */
-void make_nonblocking(int s)
-{
+
+void make_nonblocking(int s) {
+
 	struct linger ling;
 #ifdef FNDELAY
 
 	if (fcntl(s, F_SETFL, FNDELAY) == -1)
-	{
 		log_perror("NET", "FAIL", "make_nonblocking", "fcntl");
-	}
 #else
 
 	if (fcntl(s, F_SETFL, O_NDELAY) == -1)
-	{
 		log_perror("NET", "FAIL", "make_nonblocking", "fcntl");
-	}
 #endif
 	ling.l_onoff = 0;
 	ling.l_linger = 0;
 
 	if (setsockopt(s, SOL_SOCKET, SO_LINGER, (char *)&ling, sizeof(ling)) < 0)
-	{
 		log_perror("NET", "FAIL", "linger", "setsockopt");
-	}
 }
 
 /**
@@ -903,8 +795,9 @@ void make_nonblocking(int s)
  * @param a			Socket internet address descriptor
  * @return DESC*	Connection descriptor
  */
-DESC *initializesock(int s, struct sockaddr_in *a)
-{
+
+DESC *initializesock(int s, struct sockaddr_in *a) {
+
 	DESC *d = NULL;
 
 	ndescriptors++;
@@ -942,9 +835,7 @@ DESC *initializesock(int s, struct sockaddr_in *a)
 	d->address = *a;
 
 	if (descriptor_list)
-	{
 		descriptor_list->prev = &d->next;
-	}
 
 	d->hashnext = NULL;
 	d->next = descriptor_list;
@@ -961,8 +852,9 @@ DESC *initializesock(int s, struct sockaddr_in *a)
  * @param d		Socket description
  * @return int
  */
-int process_output(DESC *d)
-{
+
+int process_output(DESC *d) {
+
 	TBLOCK *tb = NULL, *save = NULL;
 	int cnt = 0;
 	char *cmdsave = NULL;
@@ -971,30 +863,23 @@ int process_output(DESC *d)
 	mushstate.debug_cmd = (char *)"< process_output >";
 	tb = d->output_head;
 
-	while (tb != NULL)
-	{
-		while (tb->hdr.nchars > 0)
-		{
+	while (tb != NULL) {
+		while (tb->hdr.nchars > 0) {
 			cnt = write(d->descriptor, tb->hdr.start, tb->hdr.nchars);
 
-			if (cnt < 0)
-			{
+			if (cnt < 0) {
 				XFREE(mushstate.debug_cmd);
 				mushstate.debug_cmd = cmdsave;
 
 				if (errno == EWOULDBLOCK)
-				{
 					return 1;
-				}
 
 				return 0;
 			}
-
 			d->output_size -= cnt;
 			tb->hdr.nchars -= cnt;
 			tb->hdr.start += cnt;
 		}
-
 		save = tb;
 		tb = tb->hdr.nxt;
 		XFREE(save->data);
@@ -1002,11 +887,8 @@ int process_output(DESC *d)
 		d->output_head = tb;
 
 		if (tb == NULL)
-		{
 			d->output_tail = NULL;
-		}
 	}
-
 	XFREE(mushstate.debug_cmd);
 	mushstate.debug_cmd = cmdsave;
 	return 1;
@@ -1018,8 +900,9 @@ int process_output(DESC *d)
  * @param d		Socket description
  * @return int
  */
-int process_input(DESC *d)
-{
+
+int process_input(DESC *d) {
+
 	char *buf = NULL;
 	int got = 0, in = 0, lost = 0;
 	char *p = NULL, *pend = NULL, *q = NULL, *qend = NULL, *cmdsave = NULL;
@@ -1029,16 +912,14 @@ int process_input(DESC *d)
 	buf = XMALLOC(LBUF_SIZE, "buf");
 	got = in = read(d->descriptor, buf, LBUF_SIZE);
 
-	if (got <= 0)
-	{
+	if (got <= 0) {
 		XFREE(mushstate.debug_cmd);
 		mushstate.debug_cmd = cmdsave;
 		XFREE(buf);
 		return 0;
 	}
 
-	if (!d->raw_input)
-	{
+	if (!d->raw_input) {
 		d->raw_input = (CBLK *)XMALLOC(LBUF_SIZE, "d->raw_input");
 		d->raw_input_at = d->raw_input->cmd;
 	}
@@ -1047,73 +928,49 @@ int process_input(DESC *d)
 	pend = d->raw_input->cmd - sizeof(CBLKHDR) - 1 + LBUF_SIZE;
 	lost = 0;
 
-	for (q = buf, qend = buf + got; q < qend; q++)
-	{
-		if (*q == '\n')
-		{
+	for (q = buf, qend = buf + got; q < qend; q++) {
+		if (*q == '\n') {
 			*p = '\0';
 
-			if (p > d->raw_input->cmd)
-			{
+			if (p > d->raw_input->cmd) {
 				save_command(d, d->raw_input);
 				d->raw_input = (CBLK *)XMALLOC(LBUF_SIZE, "d->raw_input");
 				p = d->raw_input_at = d->raw_input->cmd;
 				pend = d->raw_input->cmd - sizeof(CBLKHDR) - 1 + LBUF_SIZE;
 			}
 			else
-			{
 				in -= 1; /* for newline */
-			}
 		}
-		else if ((*q == '\b') || (*q == 127))
-		{
+		else if ((*q == '\b') || (*q == 127)) {
 			if (*q == 127)
-			{
 				queue_string(d, NULL, "\b \b");
-			}
 			else
-			{
 				queue_string(d, NULL, " \b");
-			}
 
 			in -= 2;
 
 			if (p > d->raw_input->cmd)
-			{
 				p--;
-			}
 
 			if (p < d->raw_input_at)
-			{
 				(d->raw_input_at)--;
-			}
 		}
 		else if (p < pend && isascii(*q) && isprint(*q))
-		{
 			*p++ = *q;
-		}
-		else
-		{
+		else {
 			in--;
 
 			if (p >= pend)
-			{
 				lost++;
-			}
 		}
 	}
 
 	if (in < 0)
-	{
 		in = 0; /* backspace and delete by themselves */
-	}
 
 	if (p > d->raw_input->cmd)
-	{
 		d->raw_input_at = p;
-	}
-	else
-	{
+	else {
 		XFREE(d->raw_input);
 		d->raw_input = NULL;
 		d->raw_input_at = NULL;
@@ -1134,28 +991,22 @@ int process_input(DESC *d)
  * @param emergency Closing caused by emergency?
  * @param message	Message to send before closing
  */
-void close_sockets(int emergency, char *message)
-{
+
+void close_sockets(int emergency, char *message) {
+
 	DESC *d = NULL, *dnext = NULL;
 
-	for (d = descriptor_list, dnext = ((d != NULL) ? d->next : NULL); d; d = dnext, dnext = ((dnext != NULL) ? dnext->next : NULL))
-	{
-		if (emergency)
-		{
+	for (d = descriptor_list, dnext = ((d != NULL) ? d->next : NULL); d; d = dnext, dnext = ((dnext != NULL) ? dnext->next : NULL)) {
+		if (emergency) {
 			if (write(d->descriptor, message, strlen(message)) < 0)
-			{
 				log_perror("NET", "FAIL", NULL, "shutdown");
-			}
 
 			if (shutdown(d->descriptor, 2) < 0)
-			{
 				log_perror("NET", "FAIL", NULL, "shutdown");
-			}
 
 			close(d->descriptor);
 		}
-		else
-		{
+		else {
 			queue_string(d, NULL, message);
 			queue_write(d, "\r\n", 2);
 			shutdownsock(d, R_GOING_DOWN);
@@ -1168,8 +1019,8 @@ void close_sockets(int emergency, char *message)
  * @brief Suggar we're going down!!!
  *
  */
-void emergency_shutdown(void)
-{
+
+void emergency_shutdown(void) {
 	close_sockets(1, (char *)"Going down - Bye");
 }
 
@@ -1177,26 +1028,23 @@ void emergency_shutdown(void)
  * @brief Write a report to log
  *
  */
-void report(void)
-{
+
+void report(void) {
+
 	char *player = NULL, *enactor = NULL;
 
 	log_write(LOG_BUGS, "BUG", "INFO", "Command: '%s'", mushstate.debug_cmd);
 
-	if (Good_obj(mushstate.curr_player))
-	{
+	if (Good_obj(mushstate.curr_player)) {
 		player = log_getname(mushstate.curr_player);
 
-		if ((mushstate.curr_enactor != mushstate.curr_player) && Good_obj(mushstate.curr_enactor))
-		{
+		if ((mushstate.curr_enactor != mushstate.curr_player) && Good_obj(mushstate.curr_enactor)) {
 			enactor = log_getname(mushstate.curr_enactor);
 			log_write(LOG_BUGS, "BUG", "INFO", "Player: %s Enactor: %s", player, enactor);
 			XFREE(enactor);
 		}
 		else
-		{
 			log_write(LOG_BUGS, "BUG", "INFO", "Player: %s", player);
-		}
 		XFREE(player);
 	}
 }
@@ -1206,16 +1054,16 @@ void report(void)
  *
  * @param sig Signal to handle
  */
-void sighandler(int sig)
-{
+
+void sighandler(int sig) {
+
 	const char *signames[] = {"SIGZERO", "SIGHUP", "SIGINT", "SIGQUIT", "SIGILL", "SIGTRAP", "SIGABRT", "SIGEMT", "SIGFPE", "SIGKILL", "SIGBUS", "SIGSEGV", "SIGSYS", "SIGPIPE", "SIGALRM", "SIGTERM", "SIGURG", "SIGSTOP", "SIGTSTP", "SIGCONT", "SIGCHLD", "SIGTTIN", "SIGTTOU", "SIGIO", "SIGXCPU", "SIGXFSZ", "SIGVTALRM", "SIGPROF", "SIGWINCH", "SIGLOST", "SIGUSR1", "SIGUSR2"};
 	int i = 0;
 	pid_t child = 0;
 	char *s = NULL;
 	int stat = 0;
 
-	switch (sig)
-	{
+	switch (sig) {
 	case SIGUSR1: /*!< Normal restart now */
 		log_signal(signames[sig]);
 		do_restart(GOD, GOD, 0);
@@ -1230,15 +1078,12 @@ void sighandler(int sig)
 		break;
 
 	case SIGCHLD: /*!< Change in child status */
-		while ((child = waitpid(0, &stat, WNOHANG)) > 0)
-		{
-			if (mushconf.fork_dump && mushstate.dumping && child == mushstate.dumper && (WIFEXITED(stat) || WIFSIGNALED(stat)))
-			{
+		while ((child = waitpid(0, &stat, WNOHANG)) > 0) {
+			if (mushconf.fork_dump && mushstate.dumping && child == mushstate.dumper && (WIFEXITED(stat) || WIFSIGNALED(stat))) {
 				mushstate.dumping = 0;
 				mushstate.dumper = 0;
 			}
 		}
-
 		break;
 
 	case SIGHUP: /*!< Dump database soon */
@@ -1289,8 +1134,7 @@ void sighandler(int sig)
 		log_signal(signames[sig]);
 		report();
 
-		if (mushconf.sig_action != SA_EXIT)
-		{
+		if (mushconf.sig_action != SA_EXIT) {
 			raw_broadcast(0, "GAME: Fatal signal %s caught, restarting with previous database.", signames[sig]);
 			/**
 			 * Not good, Don't sync, restart using older db.
@@ -1305,8 +1149,7 @@ void sighandler(int sig)
 			 * second signal with the SIG_DFL action.
 			 *
 			 */
-			if (fork() > 0)
-			{
+			if (fork() > 0) {
 				unset_signals();
 				/**
 				 * In the parent process (easier to follow
@@ -1317,8 +1160,7 @@ void sighandler(int sig)
 				 * child process.
 				 *
 				 */
-				for (i = 0; i < maxd; i++)
-				{
+				for (i = 0; i < maxd; i++) {
 					close(i);
 				}
 
@@ -1330,8 +1172,7 @@ void sighandler(int sig)
 			execl(mushconf.game_exec, mushconf.game_exec, mushconf.config_file, (char *)NULL);
 			break;
 		}
-		else
-		{
+		else {
 			unset_signals();
 			log_write_raw(1, "ABORT! bsd.c, SA_EXIT requested.\n");
 			write_status_file(NOTHING, "ABORT! bsd.c, SA_EXIT requested.");
@@ -1357,8 +1198,9 @@ void sighandler(int sig)
  * @brief Set the signals handlers
  *
  */
-void set_signals(void)
-{
+
+void set_signals(void) {
+
 	sigset_t sigs;
 	/**
 	 * We have to reset our signal mask, because of the possibility that
@@ -1404,10 +1246,10 @@ void set_signals(void)
  * @brief Unset the signal handlers
  *
  */
-void unset_signals(void)
-{
-	for (int i = 0; i < NSIG; i++)
-	{
+
+void unset_signals(void) {
+
+	for (int i = 0; i < NSIG; i++) {
 		signal(i, SIG_DFL);
 	}
 }
@@ -1417,22 +1259,18 @@ void unset_signals(void)
  *
  * @param sig Signal that triggered the check
  */
-void check_panicking(int sig)
-{
+
+void check_panicking(int sig) {
 	/**
 	 * If we are panicking, turn off signal catching and resignal
 	 *
 	 */
-	if (mushstate.panicking)
-	{
-		for (int i = 0; i < NSIG; i++)
-		{
+	if (mushstate.panicking) {
+		for (int i = 0; i < NSIG; i++) {
 			signal(i, SIG_DFL);
 		}
-
 		kill(getpid(), sig);
 	}
-
 	mushstate.panicking = 1;
 }
 
@@ -1441,7 +1279,7 @@ void check_panicking(int sig)
  *
  * @param signame Signal name.
  */
-void log_signal(const char *signame)
-{
+
+void log_signal(const char *signame) {
 	log_write(LOG_PROBLEMS, "SIG", "CATCH", "Caught signal %s", signame);
 }
