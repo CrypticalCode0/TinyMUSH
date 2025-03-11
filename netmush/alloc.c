@@ -56,20 +56,18 @@
  * @param var      Name of the variable that will receive the pointer (not the variable itself).
  * @return void*   Pointer to the allocated buffer.
  */
-void *__xmalloc(size_t size, const char *file, int line, const char *function, const char *var)
-{
-	if (size > 0)
-	{
-		if (var)
-		{
+
+void *__xmalloc(size_t size, const char *file, int line, const char *function, const char *var) {
+
+	if (size > 0) {
+		if (var) {
 			MEMTRACK *mtrk = NULL;
 
 			// mtrk = (MEMTRACK *)calloc(size + sizeof(MEMTRACK) + sizeof(uint64_t), sizeof(char));
 			mtrk = (MEMTRACK *)malloc(size + sizeof(MEMTRACK) + sizeof(uint64_t));
 			memset(mtrk, 0, size + sizeof(MEMTRACK) + sizeof(uint64_t));
 
-			if (mtrk)
-			{
+			if (mtrk) {
 				mtrk->bptr = (void *)((char *)mtrk + sizeof(MEMTRACK));
 				mtrk->size = size;
 				mtrk->file = file;
@@ -85,9 +83,7 @@ void *__xmalloc(size_t size, const char *file, int line, const char *function, c
 			}
 		}
 		else
-		{
 			return calloc(size, sizeof(char));
-		}
 	}
 	return NULL;
 }
@@ -115,13 +111,11 @@ void *__xmalloc(size_t size, const char *file, int line, const char *function, c
  * @param var      Name of the variable that will receive the pointer (not the variable itself).
  * @return void*   Pointer to the allocated buffer.
  */
-void *__xcalloc(size_t nmemb, size_t size, const char *file, int line, const char *function, const char *var)
-{
-	if ((nmemb * size) > 0)
-	{
-		return __xmalloc(nmemb * size, file, line, function, var);
-	}
 
+void *__xcalloc(size_t nmemb, size_t size, const char *file, int line, const char *function, const char *var) {
+
+	if ((nmemb * size) > 0)
+		return __xmalloc(nmemb * size, file, line, function, var);
 	return NULL;
 }
 
@@ -151,50 +145,38 @@ void *__xcalloc(size_t nmemb, size_t size, const char *file, int line, const cha
  * @param var      Name of the variable that will receive the pointer (not the variable itself).
  * @return void*   Pointer to the allocated buffer.
  */
-void *__xrealloc(void *ptr, size_t size, const char *file, int line, const char *function, const char *var)
-{
-	if (size > 0)
-	{
+
+void *__xrealloc(void *ptr, size_t size, const char *file, int line, const char *function, const char *var) {
+
+	if (size > 0) {
 		void *nptr = NULL;
 		MEMTRACK *mtrk = NULL;
 
-		if (var)
-		{
+		if (var) {
 			nptr = __xmalloc(size, file, line, function, var);
-			if (ptr)
-			{
+			if (ptr) {
 				mtrk = __xfind(ptr);
-				if (mtrk)
-				{
+				if (mtrk) {
 					if (mtrk->size < size)
-					{
 						memmove(nptr, ptr, mtrk->size);
-					}
 					else
-					{
 						memmove(nptr, ptr, size);
-					}
 				}
 				else
-				{
 					memmove(nptr, ptr, size);
-				}
 				__xfree(ptr);
 			}
 			ptr = nptr;
 		}
-		else
-		{
+		else {
 			nptr = realloc(ptr, size);
 			ptr = nptr;
 		}
 	}
-	else
-	{
+	else {
 		__xfree(ptr);
 		ptr = NULL;
 	}
-
 	return ptr;
 }
 
@@ -211,20 +193,15 @@ void *__xrealloc(void *ptr, size_t size, const char *file, int line, const char 
  * @return         Pointer to a MEMTRACK structure with information on the memory block.
  *                 or NULL if not found.
  */
-MEMTRACK *__xfind(void *ptr)
-{
-	if (ptr)
-	{
-		if (mushstate.raw_allocs)
-		{
+MEMTRACK *__xfind(void *ptr) {
+
+	if (ptr) {
+		if (mushstate.raw_allocs) {
 			MEMTRACK *curr = mushstate.raw_allocs;
 
-			while (curr)
-			{
+			while (curr) {
 				if (((uintptr_t)ptr >= (uintptr_t)curr->bptr) && ((uintptr_t)ptr < (uintptr_t)curr->magic))
-				{
 					return curr;
-				}
 				curr = curr->next;
 			}
 		}
@@ -239,22 +216,16 @@ MEMTRACK *__xfind(void *ptr)
  * @return int     1, if everything is allright. 0, if buffer overrun, 2 if the buffer
  *                 isn't track.
  */
-int __xcheck(void *ptr)
-{
-	if (ptr)
-	{
-		if (mushstate.raw_allocs)
-		{
+int __xcheck(void *ptr) {
+
+	if (ptr) {
+		if (mushstate.raw_allocs) {
 			MEMTRACK *curr = mushstate.raw_allocs;
 
-			while (curr)
-			{
-				if ((ptr >= (void *)curr->bptr) && (ptr < (void *)curr->magic))
-				{
+			while (curr) {
+				if ((ptr >= (void *)curr->bptr) && (ptr < (void *)curr->magic)) {
 					if (*(curr->magic) == XMAGIC)
-					{
 						return 1;
-					}
 					return 0;
 				}
 				curr = curr->next;
@@ -278,40 +249,28 @@ int __xcheck(void *ptr)
  * @param ptr Pointer to the allocation to be freed.
  * @return 1 if the buffer was tracked and it has been overrun, else 0.
  */
-int __xfree(void *ptr)
-{
+
+int __xfree(void *ptr) {
+
 	int overrun = 0;
 
-	if (ptr)
-	{
+	if (ptr) {
 		MEMTRACK *prev = NULL;
 		MEMTRACK *curr = mushstate.raw_allocs;
 
 		while (curr)
 		{
-			if ((ptr >= (void *)curr->bptr) && (ptr < (void *)curr->magic))
-			{
+			if ((ptr >= (void *)curr->bptr) && (ptr < (void *)curr->magic)) {
 				if (*curr->magic != XMAGIC)
-				{
 					overrun = 1;
-				}
 				if (overrun)
-				{
 					XLOGALLOC(LOG_MALLOC, "MEM", "TRACE", "%s[%d]%s:%s Free %ld bytes", curr->file, curr->line, curr->function, curr->var, curr->size);
-				}
 				else
-				{
-
 					XLOGALLOC(LOG_MALLOC, "MEM", "TRACE", "%s[%d]%s:%s Free %ld bytes -- OVERRUN ---", curr->file, curr->line, curr->function, curr->var, curr->size);
-				}
 				if (mushstate.raw_allocs == curr)
-				{
 					mushstate.raw_allocs = curr->next;
-				}
 				else
-				{
 					prev->next = curr->next;
-				}
 
 				free(curr);
 				ptr = NULL;
@@ -329,7 +288,6 @@ int __xfree(void *ptr)
 		ptr = NULL;
 	}
 	*/
-
 	return overrun;
 }
 
@@ -355,8 +313,9 @@ int __xfree(void *ptr)
  * @param ...      Variables arguments for the format string.
  * @return char*   Pointer to the new string buffer.
  */
-char *__xasprintf(const char *file, int line, const char *function, const char *var, const char *format, ...)
-{
+
+char *__xasprintf(const char *file, int line, const char *function, const char *var, const char *format, ...) {
+
 	int size = 0;
 	char *str = NULL;
 	va_list ap;
@@ -365,32 +324,24 @@ char *__xasprintf(const char *file, int line, const char *function, const char *
 	size = vsnprintf(str, size, format, ap);
 	va_end(ap);
 
-	if (size > 0)
-	{
+	if (size > 0) {
 		size++;
 		if (var)
-		{
 			str = (char *)__xmalloc(size, file, line, function, var);
-		}
 		else
-		{
 			str = (char *)calloc(size, sizeof(char));
-		}
 
-		if (str)
-		{
+		if (str) {
 			va_start(ap, format);
 			size = vsnprintf(str, size, format, ap);
 			va_end(ap);
 
-			if (size < 0)
-			{
+			if (size < 0) {
 				__xfree(str);
 				str = NULL;
 			}
 		}
 	}
-
 	return str;
 }
 
@@ -411,6 +362,7 @@ char *__xasprintf(const char *file, int line, const char *function, const char *
  * @param ...      Variables arguments for the format string.
  * @return char*   Pointer to the new string buffer.
  */
+
 char *__xavsprintf(const char *file, int line, const char *function, const char *var, const char *format, va_list va)
 {
 	int size = 0;
@@ -421,32 +373,24 @@ char *__xavsprintf(const char *file, int line, const char *function, const char 
 	size = vsnprintf(str, size, format, ap);
 	va_end(ap);
 
-	if (size > 0)
-	{
+	if (size > 0) {
 		size++;
 		if (var)
-		{
 			str = (char *)__xmalloc(size, file, line, function, var);
-		}
 		else
-		{
 			str = (char *)calloc(size, sizeof(char));
-		}
 
-		if (str)
-		{
+		if (str) {
 			va_copy(ap, va);
 			size = vsnprintf(str, size, format, ap);
 			va_end(ap);
 
-			if (size < 0)
-			{
+			if (size < 0) {
 				__xfree(str);
 				str = NULL;
 			}
 		}
 	}
-
 	return str;
 }
 
@@ -461,8 +405,9 @@ char *__xavsprintf(const char *file, int line, const char *function, const char 
  * @param ...     Variables argument list for the format string.
  * @return int    Number of byte written to the buffer.
  */
-int __xsprintf(char *str, const char *format, ...)
-{
+
+int __xsprintf(char *str, const char *format, ...) {
+
 	int size = 0;
 	va_list ap;
 
@@ -484,42 +429,33 @@ int __xsprintf(char *str, const char *format, ...)
  * @param ap      Variables argument list for the format string.
  * @return int    Number of byte written to the buffer.
  */
-int __xvsprintf(char *str, const char *format, va_list ap)
-{
+
+int __xvsprintf(char *str, const char *format, va_list ap) {
+
 	int size = 0;
 
-	if (str)
-	{
+	if (str) {
 		va_list vp;
 		va_copy(vp, ap);
 		size = vsnprintf(str, size, format, vp);
 		va_end(vp);
 
-		if (size > 0)
-		{
+		if (size > 0) {
 			size++;
 			va_copy(vp, ap);
 			MEMTRACK *mtrk = __xfind(str);
-			if (mtrk)
-			{
+			if (mtrk) {
 				if ((str + size) < ((char *)mtrk->magic))
-				{
 					size = vsnprintf(str, size, format, vp);
-				}
 				else
-				{
 					size = vsnprintf(str, (size_t)(((char *)mtrk->magic) - str), format, vp);
-				}
 			}
 			else
-			{
 				size = vsprintf(str, format, vp);
-			}
 
 			va_end(vp);
 		}
 	}
-
 	return size;
 }
 
@@ -535,8 +471,9 @@ int __xvsprintf(char *str, const char *format, va_list ap)
  * @param ...      Variables arguments for the format string.
  * @return int     Number of byte written to the buffer.
  */
-int __xsnprintf(char *str, size_t size, const char *format, ...)
-{
+
+int __xsnprintf(char *str, size_t size, const char *format, ...) {
+
 	va_list ap;
 
 	va_start(ap, format);
@@ -558,33 +495,25 @@ int __xsnprintf(char *str, size_t size, const char *format, ...)
  * @param ap       Variables argument list for the format string.
  * @return int     Number of byte written to the buffer.
  */
-int __xvsnprintf(char *str, size_t size, const char *format, va_list ap)
-{
-	if ((size > 0) && str)
-	{
+
+int __xvsnprintf(char *str, size_t size, const char *format, va_list ap) {
+
+	if ((size > 0) && str) {
 		va_list vp;
 
 		va_copy(vp, ap);
 		MEMTRACK *mtrk = __xfind(str);
-		if (mtrk)
-		{
+		if (mtrk) {
 			if ((str + size) < ((char *)mtrk->magic))
-			{
 				size = vsnprintf(str, size, format, vp);
-			}
 			else
-			{
 				size = vsnprintf(str, (size_t)(((char *)mtrk->magic) - str), format, vp);
-			}
 		}
 		else
-		{
 			size = vsnprintf(str, size, format, vp);
-		}
 
 		va_end(vp);
 	}
-
 	return size;
 }
 
@@ -599,8 +528,9 @@ int __xvsnprintf(char *str, size_t size, const char *format, va_list ap)
  * @param ...     Variables argument list for the format string.
  * @return int    Number of byte written to the buffer.
  */
-int __xsprintfcat(char *str, const char *format, ...)
-{
+
+int __xsprintfcat(char *str, const char *format, ...) {
+
 	int size = 0;
 	va_list ap;
 
@@ -620,13 +550,15 @@ int __xsprintfcat(char *str, const char *format, ...)
  * @param ...		Variables argument list for the format string.
  * @return char*	Pointer to buffer
  */
-char *__xsafesprintf(char *buff, char **bufp, const char *format, ...)
-{
+
+char *__xsafesprintf(char *buff, char **bufp, const char *format, ...) {
+
 	va_list ap;
 
 	va_start(ap, format);
 	*bufp += __xvsprintf(*bufp, format, ap);
 	va_end(ap);
+
 	return (buff);
 }
 
@@ -646,17 +578,16 @@ char *__xsafesprintf(char *buff, char **bufp, const char *format, ...)
  * @param var      Name of the variable that will receive the pointer (not the variable itself).
  * @return char*   Pointer to the new string buffer.
  */
-char *__xstrdup(const char *s, const char *file, int line, const char *function, const char *var)
-{
+
+char *__xstrdup(const char *s, const char *file, int line, const char *function, const char *var) {
+
 	char *r = NULL;
 
-	if (s)
-	{
+	if (s) {
 		size_t l = strlen(s);
 		r = (char *)__xmalloc(l + 1, file, line, function, var);
 		strcpy(r, s);
 	}
-
 	return (r);
 }
 
@@ -677,17 +608,16 @@ char *__xstrdup(const char *s, const char *file, int line, const char *function,
  * @param var      Name of the variable that will receive the pointer (not the variable itself).
  * @return char*   Pointer to the new string buffer.
  */
-char *__xstrndup(const char *s, size_t n, const char *file, int line, const char *function, const char *var)
-{
+
+char *__xstrndup(const char *s, size_t n, const char *file, int line, const char *function, const char *var) {
+
 	char *r = NULL;
 
-	if (s)
-	{
+	if (s) {
 		r = (char *)__xmalloc(n + 1, file, line, function, var);
 		strncpy(r, s, n);
 		*(r + n) = 0x00;
 	}
-
 	return (r);
 }
 
@@ -703,30 +633,23 @@ char *__xstrndup(const char *s, size_t n, const char *file, int line, const char
  * @return Pointer to the end of the string dest (that is, the address of the
  *         terminating null byte) rather than the beginning.
  */
-char *__xstpcpy(char *dest, const char *src)
-{
+
+char *__xstpcpy(char *dest, const char *src) {
+
 	char *ptr = NULL;
 
-	if (dest)
-	{
+	if (dest) {
 		size_t size = strlen(src);
 		MEMTRACK *mtrk = __xfind(dest);
 
-		if (mtrk)
-		{
+		if (mtrk) {
 			if (dest + size < ((char *)mtrk->magic))
-			{
 				ptr = stpcpy(dest, src);
-			}
 			else
-			{
 				ptr = strncpy(dest, src, ((char *)mtrk->magic) - dest) + size;
-			}
 		}
 		else
-		{
 			ptr = stpcpy(dest, src);
-		}
 	}
 	return ptr;
 }
@@ -741,25 +664,20 @@ char *__xstpcpy(char *dest, const char *src)
  * @param src Pointer to source buffer.
  * @return Pointer to the destination string dest.
  */
-char *__xstrcat(char *dest, const char *src)
-{
+
+char *__xstrcat(char *dest, const char *src) {
+
 	char *ptr = NULL;
 
-	if (dest)
-	{
+	if (dest) {
 		MEMTRACK *mtrk = __xfind(dest);
-		if (mtrk)
-		{
+		if (mtrk) {
 			size_t size = ((char *)mtrk->magic) - (dest + strlen(dest));
 			if (size > 0)
-			{
 				ptr = strncat(dest, src, size);
-			}
 		}
 		else
-		{
 			ptr = strcat(dest, src);
-		}
 	}
 	return ptr;
 }
@@ -776,29 +694,22 @@ char *__xstrcat(char *dest, const char *src)
  * @param n Maximum numbers of characters to copy.
  * @return Pointer to the destination string dest.
  */
-char *__xstrncat(char *dest, const char *src, size_t n)
-{
+
+char *__xstrncat(char *dest, const char *src, size_t n) {
+
 	char *ptr = NULL;
 
-	if (dest)
-	{
+	if (dest) {
 		MEMTRACK *mtrk = __xfind(dest);
-		if (mtrk)
-		{
+		if (mtrk) {
 			size_t size = ((char *)mtrk->magic) - (dest + strlen(dest));
 			if (size > n)
-			{
 				size = n;
-			}
 			if (size > 0)
-			{
 				ptr = strncat(dest, src, size);
-			}
 		}
 		else
-		{
 			ptr = strncat(dest, src, n);
-		}
 	}
 	return ptr;
 }
@@ -813,21 +724,18 @@ char *__xstrncat(char *dest, const char *src, size_t n)
  * @param src Source character.
  * @return Pointer to the end of destination string dest.
  */
-char *__xstrccat(char *dest, const char src)
-{
+
+char *__xstrccat(char *dest, const char src) {
+
 	char *ptr = NULL;
 
-	if (dest)
-	{
+	if (dest) {
 		MEMTRACK *mtrk = __xfind(dest);
 		ptr = dest + strlen(dest);
-		if (mtrk)
-		{
+		if (mtrk) {
 			size_t size = ((char *)mtrk->magic) - (dest + strlen(dest));
 			if (size < 2)
-			{
 				return ptr;
-			}
 		}
 		*(ptr++) = src;
 		*(ptr) = 0x0;
@@ -847,24 +755,20 @@ char *__xstrccat(char *dest, const char src)
  * @param n Maximum length of dest.
  * @return Pointer to the end of destination string dest.
  */
-char *__xstrnccat(char *dest, const char src, size_t n)
-{
+
+char *__xstrnccat(char *dest, const char src, size_t n) {
+
 	char *ptr = NULL;
 
-	if (dest)
-	{
+	if (dest) {
 		MEMTRACK *mtrk = __xfind(dest);
 		ptr = dest + strlen(dest);
-		if (mtrk)
-		{
+		if (mtrk) {
 			size_t size = ((char *)mtrk->magic) - (dest + strlen(dest));
 			if (size < 2)
-			{
 				return ptr;
-			}
 		}
-		if (strlen(dest) + 1 <= n)
-		{
+		if (strlen(dest) + 1 <= n) {
 			*(ptr++) = src;
 			*(ptr) = 0x0;
 		}
@@ -882,25 +786,20 @@ char *__xstrnccat(char *dest, const char src, size_t n)
  * @param src Pointer to source buffer.
  * @return Pointer to the destination string dest.
  */
-char *__xstrcpy(char *dest, const char *src)
-{
+
+char *__xstrcpy(char *dest, const char *src) {
+
 	char *ptr = NULL;
 
-	if (dest)
-	{
+	if (dest) {
 		MEMTRACK *mtrk = __xfind(dest);
-		if (mtrk)
-		{
+		if (mtrk) {
 			size_t size = ((char *)mtrk->magic) - dest;
 			if (size > 0)
-			{
 				ptr = strncpy(dest, src, size);
-			}
 		}
 		else
-		{
 			ptr = strcpy(dest, src);
-		}
 	}
 	return ptr;
 }
@@ -917,34 +816,25 @@ char *__xstrcpy(char *dest, const char *src)
  * @param n Maximum numbers of characters to copy.
  * @return Pointer to the destination string dest.
  */
-char *__xstrncpy(char *dest, const char *src, size_t n)
-{
+
+char *__xstrncpy(char *dest, const char *src, size_t n) {
+
 	char *ptr = NULL;
 
-	if (src)
-	{
-		if (dest)
-		{
+	if (src) {
+		if (dest) {
 			MEMTRACK *mtrk = __xfind(dest);
-			if (mtrk)
-			{
+			if (mtrk) {
 				size_t size = ((char *)mtrk->magic) - dest;
 				if (n < size)
-				{
 					size = n;
-				}
 				if (size > 0)
-				{
 					ptr = strncpy(dest, src, size);
-				}
 			}
 			else
-			{
 				ptr = strncpy(dest, src, n);
-			}
 		}
 	}
-
 	return ptr;
 }
 
@@ -961,29 +851,22 @@ char *__xstrncpy(char *dest, const char *src, size_t n)
  * @param n Number of bytes to copy.
  * @return Pointer to the destination buffer.
  */
-void *__xmemmove(void *dest, const void *src, size_t n)
-{
+
+void *__xmemmove(void *dest, const void *src, size_t n) {
+
 	void *ptr = NULL;
 
-	if (dest)
-	{
+	if (dest) {
 		MEMTRACK *mtrk = __xfind(dest);
-		if (mtrk)
-		{
+		if (mtrk) {
 			size_t size = ((char *)mtrk->magic) - (char *)dest;
 			if (n < size)
-			{
 				size = n;
-			}
 			if (size > 0)
-			{
 				ptr = memmove(dest, src, size);
-			}
 		}
 		else
-		{
 			ptr = memmove(dest, src, n);
-		}
 	}
 	return ptr;
 }
@@ -1004,29 +887,22 @@ void *__xmemmove(void *dest, const void *src, size_t n)
  * @param n Number of bytes to copy.
  * @return Pointer to the byte following the last written byte.
  */
-void *__xmempcpy(void *dest, const void *src, size_t n)
-{
+
+void *__xmempcpy(void *dest, const void *src, size_t n) {
+
 	void *ptr = NULL;
 
-	if (dest)
-	{
+	if (dest) {
 		MEMTRACK *mtrk = __xfind(dest);
-		if (mtrk)
-		{
+		if (mtrk) {
 			size_t size = ((char *)mtrk->magic) - (char *)dest;
 			if (n < size)
-			{
 				size = n;
-			}
 			if (size > 0)
-			{
 				ptr = (void *)((char *)memmove(dest, src, size) + size);
-			}
 		}
 		else
-		{
 			ptr = (void *)((char *)memmove(dest, src, n) + n);
-		}
 	}
 	return ptr;
 }
@@ -1045,30 +921,24 @@ void *__xmempcpy(void *dest, const void *src, size_t n)
  * @param n Number of bytes to copy.
  * @return Pointer to the destination buffer.
  */
-void *__xmemccpy(void *dest, const void *src, int c, size_t n)
-{
+
+void *__xmemccpy(void *dest, const void *src, int c, size_t n) {
+
 	void *ptr = NULL;
 
-	if (dest)
-	{
+	if (dest) {
 		MEMTRACK *mtrk = __xfind(dest);
-		if (mtrk)
-		{
+		if (mtrk) {
 			void *ptr1 = __xmalloc(n, __FILE__, __LINE__, __func__, "ptr1");
 			size_t size = ((char *)mtrk->magic) - (char *)dest;
 			memmove(ptr1, src, n);
 			if (n < size)
-			{
 				size = n;
-			}
 			if (size > 0)
-			{
 				ptr = memccpy(dest, ptr1, c, size);
-			}
 			__xfree(ptr1);
 		}
-		else
-		{
+		else {
 			void *ptr1 = __xmalloc(n, __FILE__, __LINE__, __func__, "ptr1");
 			memmove(ptr1, src, n);
 			ptr = memccpy(dest, ptr1, c, n);
@@ -1090,23 +960,18 @@ void *__xmemccpy(void *dest, const void *src, int c, size_t n)
  * @param n Size of the memory area to fill.
  * @return Pointer to the memory area.
  */
-void *__xmemset(void *s, int c, size_t n)
-{
-	if (s)
-	{
+
+void *__xmemset(void *s, int c, size_t n) {
+
+	if (s) {
 		MEMTRACK *mtrk = __xfind(s);
-		if (mtrk)
-		{
+		if (mtrk) {
 			size_t size = ((char *)mtrk->magic) - (char *)s;
 			if (size < n)
-			{
 				n = size;
-			}
 		}
 		if (n > 0)
-		{
 			memset(s, c, n);
-		}
 	}
 	return (s);
 }
@@ -1120,8 +985,8 @@ void *__xmemset(void *s, int c, size_t n)
  *
  * @param player dbref of the player who did the command
  */
-void list_bufstats(dbref player)
-{
+
+void list_bufstats(dbref player) {
 	list_rawmemory(player);
 }
 
@@ -1130,8 +995,8 @@ void list_bufstats(dbref player)
  *
  * @param player dbref of the player who did the command
  */
-void list_buftrace(dbref player)
-{
+
+void list_buftrace(dbref player) {
 	list_rawmemory(player);
 }
 
@@ -1144,8 +1009,9 @@ void list_buftrace(dbref player)
  * @param p2       Pointer to the second MEMTRACK struct to compare.
  * @return int     Result of the comparison (see man qsort()).
  */
-int __xsorttrace(const void *p1, const void *p2)
-{
+
+int __xsorttrace(const void *p1, const void *p2) {
+
 	char *s1 = NULL, *s2 = NULL;
 	int r = 0;
 
@@ -1169,8 +1035,7 @@ int __xsorttrace(const void *p1, const void *p2)
  * @param player   Dbref of the player making the request.
  */
 
-void list_rawmemory(dbref player)
-{
+void list_rawmemory(dbref player) {
 	MEMTRACK *tptr = NULL, **t_array = NULL;
 	size_t n_tags = 0, total = 0, c_tags = 0, c_total = 0, u_tags = 0;
 	size_t i = 0, j = 0;
@@ -1179,52 +1044,41 @@ void list_rawmemory(dbref player)
 	notify(player, "File              Line Function            Variable             Allocs    Bytes");
 	notify(player, "--------------- ------ ------------------- -------------------- ------ --------");
 
-	if (mushstate.raw_allocs != NULL)
-	{
-		for (tptr = mushstate.raw_allocs; tptr != NULL; tptr = tptr->next)
-		{
+	if (mushstate.raw_allocs != NULL) {
+		for (tptr = mushstate.raw_allocs; tptr != NULL; tptr = tptr->next) {
 			n_tags++;
 			total += tptr->size;
 		}
 
-		if (n_tags > 1)
-		{
+		if (n_tags > 1) {
 			t_array = (MEMTRACK **)calloc(total, sizeof(MEMTRACK *));
 
-			for (i = 0, tptr = mushstate.raw_allocs; tptr != NULL; i++, tptr = tptr->next)
-			{
+			for (i = 0, tptr = mushstate.raw_allocs; tptr != NULL; i++, tptr = tptr->next) {
 				t_array[i] = tptr;
 			}
 
 			qsort((void *)t_array, n_tags, sizeof(MEMTRACK *), (int (*)(const void *, const void *))__xsorttrace);
 
-			for (i = 0; i < n_tags;)
-			{
+			for (i = 0; i < n_tags;) {
 				u_tags++;
 
 				s1 = XNASPRINTF("%-15.15s %6d %-19.19s %-20.20s", t_array[i]->file, t_array[i]->line, t_array[i]->function, t_array[i]->var);
-				if (t_array[i + 1] != NULL)
-				{
+				if (t_array[i + 1] != NULL) {
 					s2 = XNASPRINTF("%-15.15s %6d %-19.19s %-20.20s", t_array[i + 1]->file, t_array[i + 1]->line, t_array[i + 1]->function, t_array[i + 1]->var);
 				}
 				else
-				{
 					s2 = NULL;
-				}
 
-				if ((i < n_tags - 1) && !strcmp(s1, s2))
-				{
+				if ((i < n_tags - 1) && !strcmp(s1, s2)) {
 					free(s2);
 					c_tags = 2;
 					c_total = t_array[i]->size + t_array[i + 1]->size;
 
-					for (j = i + 2; (j < n_tags); j++)
-					{
+					for (j = i + 2; (j < n_tags); j++) {
 
 						s2 = XNASPRINTF("%-15.15s %6d %-19.19s %-20.20s", t_array[j]->file, t_array[j]->line, t_array[j]->function, t_array[j]->var);
 
-						if (strcmp(s1, s2))
-						{
+						if (strcmp(s1, s2)) {
 							free(s2);
 							break;
 						}
@@ -1236,8 +1090,7 @@ void list_rawmemory(dbref player)
 
 					i = j;
 				}
-				else
-				{
+				else {
 					free(s2);
 					c_tags = 1;
 					c_total = t_array[i]->size;
@@ -1245,55 +1098,36 @@ void list_rawmemory(dbref player)
 				}
 
 				if (c_total < 1024)
-				{
 					raw_notify(player, "%-63.63s %6ld %8ld", s1, c_tags, c_total);
-				}
 				else if (c_total < 1048756)
-				{
 					raw_notify(player, "%-63.63s %6ld %7.2fK", s1, c_tags, (float)c_total / 1024.0);
-				}
 				else
-				{
 					raw_notify(player, "%-63.63s %6ld %7.2fM", s1, c_tags, (float)c_total / 1048756.0);
-				}
 				free(s1);
 			}
 
 			free(t_array);
 		}
-		else
-		{
+		else {
 			u_tags = 1;
 			s1 = XNASPRINTF("%s:%s", mushstate.raw_allocs->function, mushstate.raw_allocs->var);
 			if (total < 1024)
-			{
 				raw_notify(player, "%-63.63s %6ld %8ld", s1, n_tags, total);
-			}
 			else if (total < 1048756)
-			{
 				raw_notify(player, "%-63.63s %6ld %7.2fK", s1, n_tags, (float)total / 1024.0);
-			}
 			else
-			{
 				raw_notify(player, "%-63.63s %6ld %7.2fM", s1, n_tags, (float)total / 1048756.0);
-			}
 			free(s1);
 		}
 	}
 
 	notify(player, "-------------------------------------------------------------------------------");
 	if (total < 1024)
-	{
 		raw_notify(player, "Total: %ld raw allocations in %ld unique tags, %ld bytes used.", n_tags, u_tags, total);
-	}
 	else if (total < 1048756)
-	{
 		raw_notify(player, "Total: %ld raw allocations in %ld unique tags, %0.2fK bytes used.", n_tags, u_tags, (float)total / 1024.0);
-	}
 	else
-	{
 		raw_notify(player, "Total: %ld raw allocations in %ld unique tags, %0.2fM bytes used.", n_tags, u_tags, total, (float)total / 1048756.0);
-	}
 }
 
 /**
@@ -1301,16 +1135,15 @@ void list_rawmemory(dbref player)
  *
  * @return size_t  Memory usage.
  */
-size_t total_rawmemory(void)
-{
+
+size_t total_rawmemory(void) {
+
 	MEMTRACK *tptr = NULL;
 	size_t total_bytes = 0;
 
-	for (tptr = mushstate.raw_allocs; tptr != NULL; tptr = tptr->next)
-	{
+	for (tptr = mushstate.raw_allocs; tptr != NULL; tptr = tptr->next) {
 		total_bytes += tptr->size;
 	}
-
 	return (total_bytes);
 }
 
@@ -1331,19 +1164,14 @@ size_t total_rawmemory(void)
  * @return Number of characters that where not copied if the buffer
  *         (whichever is smaller) isn't big enough to hold the result.
  */
-size_t __xsafestrncpy(char *dest, char **destp, const char *src, size_t n, size_t size)
-{
-	if (src)
-	{
-		if (dest)
-		{
-			if (__xfind(dest))
-			{
-				size = n < XCALSIZE(XGETSIZE(dest), dest, destp) ? n : XCALSIZE(XGETSIZE(dest), dest, destp);
-			}
+size_t __xsafestrncpy(char *dest, char **destp, const char *src, size_t n, size_t size) {
 
-			if (size > 0)
-			{
+	if (src) {
+		if (dest) {
+			if (__xfind(dest))
+				size = n < XCALSIZE(XGETSIZE(dest), dest, destp) ? n : XCALSIZE(XGETSIZE(dest), dest, destp);
+
+			if (size > 0) {
 				**destp = 0;
 				strncpy(*destp, src, size);
 				*destp += size;
@@ -1364,20 +1192,15 @@ size_t __xsafestrncpy(char *dest, char **destp, const char *src, size_t n, size_
  * @param destp Pointer tracking the desstination buffer.
  * @param size Maximum size of the destination buffer.
  */
-int __xsafestrcatchr(char *dest, char **destp, char c, size_t size)
-{
-	if (dest)
-	{
+
+int __xsafestrcatchr(char *dest, char **destp, char c, size_t size) {
+
+	if (dest) {
 		if (__xfind(dest))
-		{
 			size = XCALSIZE(XGETSIZE(dest), dest, destp);
-		}
 		else
-		{
 			size = XCALSIZE(size, dest, destp);
-		}
-		if (size > 0)
-		{
+		if (size > 0) {
 			char *tp = *destp;
 			*tp++ = c;
 			*tp = 0;
@@ -1400,19 +1223,15 @@ int __xsafestrcatchr(char *dest, char **destp, char c, size_t size)
  * @return Number of characters that where not copied if the buffer
  *         (whichever is smaller) isn't big enough to hold the result.
  */
-size_t __xsafestrncat(char *dest, char **destp, const char *src, size_t n, size_t size)
-{
-	if (src)
-	{
-		if (dest)
-		{
-			if (__xfind(dest))
-			{
-				size = n < XCALSIZE(XGETSIZE(dest), dest, destp) ? n : XCALSIZE(XGETSIZE(dest), dest, destp);
-			}
 
-			if (size > 0)
-			{
+size_t __xsafestrncat(char *dest, char **destp, const char *src, size_t n, size_t size) {
+
+	if (src) {
+		if (dest) {
+			if (__xfind(dest))
+				size = n < XCALSIZE(XGETSIZE(dest), dest, destp) ? n : XCALSIZE(XGETSIZE(dest), dest, destp);
+
+			if (size > 0) {
 				**destp = 0;
 				strncat(*destp, src, size);
 				*destp += size;
@@ -1432,8 +1251,9 @@ size_t __xsafestrncat(char *dest, char **destp, const char *src, size_t n, size_
  * @param num Number to convert.
  * @param size Maximum size of the destination buffer.
  */
-void __xsafeltos(char *dest, char **destp, long num, size_t size)
-{
+
+void __xsafeltos(char *dest, char **destp, long num, size_t size) {
+
 	char *buff = XLTOS(num);
 
 	__xsafestrncat(dest, destp, buff, strlen(buff), size);
@@ -1449,14 +1269,13 @@ void __xsafeltos(char *dest, char **destp, long num, size_t size)
  * @param c Character to fill the string with.
  * @return Pointer to the build string.
  */
-char *__xrepeatchar(size_t size, char c)
-{
+
+char *__xrepeatchar(size_t size, char c) {
+
 	void *ptr = (char *)XMALLOC(size + 1, "ptr");
 
 	if (ptr)
-	{
 		return (char *)__xmemset(ptr, c, size);
-	}
 
 	return NULL;
 }
