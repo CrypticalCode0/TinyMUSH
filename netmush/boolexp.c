@@ -31,8 +31,9 @@
  * @param key		Key
  * @return bool
  */
-bool check_attr(dbref player, dbref lockobj, ATTR *attr, char *key)
-{
+
+bool check_attr(dbref player, dbref lockobj, ATTR *attr, char *key) {
+
 	char *buff = NULL;
 	dbref aowner = NOTHING;
 	int aflags = 0, alen = 0, checkit = 0;
@@ -40,8 +41,7 @@ bool check_attr(dbref player, dbref lockobj, ATTR *attr, char *key)
 	buff = atr_pget(player, attr->number, &aowner, &aflags, &alen);
 	checkit = false;
 
-	if (attr->number == A_LCONTROL)
-	{
+	if (attr->number == A_LCONTROL) {
 		/**
 		 * We can see control locks... else we'd break zones
 		 *
@@ -49,18 +49,12 @@ bool check_attr(dbref player, dbref lockobj, ATTR *attr, char *key)
 		checkit = true;
 	}
 	else if (See_attr(lockobj, player, attr, aowner, aflags))
-	{
 		checkit = true;
-	}
 	else if (attr->number == A_NAME)
-	{
 		checkit = true;
-	}
 
 	if (checkit && (!wild_match(key, buff)))
-	{
 		checkit = false;
-	}
 
 	XFREE(buff);
 	return checkit;
@@ -71,8 +65,9 @@ bool check_attr(dbref player, dbref lockobj, ATTR *attr, char *key)
  *
  * @return BOOLEXP* Initialized BOOLEXP item.
  */
-BOOLEXP *alloc_boolexp(void)
-{
+
+BOOLEXP *alloc_boolexp(void) {
+
 	BOOLEXP *b = XMALLOC(sizeof(BOOLEXP), "b");
 
 	b->type = 0;
@@ -88,13 +83,13 @@ BOOLEXP *alloc_boolexp(void)
  *
  * @param b BOOLEXP item.
  */
-void free_boolexp(BOOLEXP *b)
-{
+
+void free_boolexp(BOOLEXP *b) {
+
 	if (b == TRUE_BOOLEXP)
 		return;
 
-	switch (b->type)
-	{
+	switch (b->type) {
 	case BOOLEXP_AND:
 	case BOOLEXP_OR:
 		XFREE(b->sub1);
@@ -129,8 +124,9 @@ void free_boolexp(BOOLEXP *b)
  * @param b			Boolean expression
  * @return bool
  */
-bool eval_boolexp(dbref player, dbref thing, dbref from, BOOLEXP *b)
-{
+
+bool eval_boolexp(dbref player, dbref thing, dbref from, BOOLEXP *b) {
+
 	dbref aowner = NOTHING, obj = NOTHING, source = NOTHING, lock_originator = NOTHING;
 	int aflags = 0, alen = 0, c = 0, checkit = 0;
 	char *key = NULL, *buff = NULL, *buff2 = NULL, *bp = NULL, *str = NULL, *pname = NULL, *lname = NULL;
@@ -138,12 +134,9 @@ bool eval_boolexp(dbref player, dbref thing, dbref from, BOOLEXP *b)
 	GDATA *preserve = NULL;
 
 	if (b == TRUE_BOOLEXP)
-	{
 		return true;
-	}
 
-	switch (b->type)
-	{
+	switch (b->type) {
 	case BOOLEXP_AND:
 		return (eval_boolexp(player, thing, from, b->sub1) && eval_boolexp(player, thing, from, b->sub2));
 
@@ -162,20 +155,16 @@ bool eval_boolexp(dbref player, dbref thing, dbref from, BOOLEXP *b)
 		 */
 		mushstate.lock_nest_lev++;
 
-		if (mushstate.lock_nest_lev >= mushconf.lock_nest_lim)
-		{
+		if (mushstate.lock_nest_lev >= mushconf.lock_nest_lim) {
 			pname = log_getname(player);
 
-			if ((mushconf.log_info & LOGOPT_LOC) && Has_location(player))
-			{
+			if ((mushconf.log_info & LOGOPT_LOC) && Has_location(player)) {
 				lname = log_getname(Location(player));
 				log_write(LOG_BUGS, "BUG", "LOCK", "%s in %s: Lock exceeded recursion limit.", pname, lname);
 				XFREE(lname);
 			}
 			else
-			{
 				log_write(LOG_BUGS, "BUG", "LOCK", "%s: Lock exceeded recursion limit.", pname);
-			}
 
 			XFREE(pname);
 			notify(player, "Sorry, broken lock!");
@@ -183,20 +172,16 @@ bool eval_boolexp(dbref player, dbref thing, dbref from, BOOLEXP *b)
 			return false;
 		}
 
-		if ((b->sub1->type != BOOLEXP_CONST) || (b->sub1->thing < 0))
-		{
+		if ((b->sub1->type != BOOLEXP_CONST) || (b->sub1->thing < 0)) {
 			pname = log_getname(player);
-			if ((mushconf.log_info & LOGOPT_LOC) && Has_location(player))
-			{
+			if ((mushconf.log_info & LOGOPT_LOC) && Has_location(player)) {
 				lname = log_getname(Location(player));
 
 				log_write(LOG_BUGS, "BUG", "LOCK", "%s in %s: Lock had bad indirection (%c, type %d)", pname, lname, INDIR_TOKEN, b->sub1->type);
 				XFREE(lname);
 			}
 			else
-			{
 				log_write(LOG_BUGS, "BUG", "LOCK", "%s in %s: Lock had bad indirection (%c, type %d)", pname, INDIR_TOKEN, b->sub1->type);
-			}
 			XFREE(pname);
 
 			notify(player, "Sorry, broken lock!");
@@ -218,8 +203,7 @@ bool eval_boolexp(dbref player, dbref thing, dbref from, BOOLEXP *b)
 	case BOOLEXP_ATR:
 		a = atr_num(b->thing);
 
-		if (!a)
-		{
+		if (!a) {
 			/**
 			 * no such attribute
 			 *
@@ -232,24 +216,18 @@ bool eval_boolexp(dbref player, dbref thing, dbref from, BOOLEXP *b)
 		 *
 		 */
 		if (check_attr(player, from, a, (char *)b->sub1))
-		{
 			return true;
-		}
 
-		for (obj = Contents(player); (obj != NOTHING) && (Next(obj) != obj); obj = Next(obj))
-		{
+		for (obj = Contents(player); (obj != NOTHING) && (Next(obj) != obj); obj = Next(obj)) {
 			if (check_attr(obj, from, a, (char *)b->sub1))
-			{
 				return true;
-			}
 		}
 		return false;
 
 	case BOOLEXP_EVAL:
 		a = atr_num(b->thing);
 
-		if (!a)
-		{
+		if (!a) {
 			/**
 			 * no such attribute
 			 *
@@ -260,8 +238,7 @@ bool eval_boolexp(dbref player, dbref thing, dbref from, BOOLEXP *b)
 		source = from;
 		buff = atr_pget(from, a->number, &aowner, &aflags, &alen);
 
-		if (!*buff)
-		{
+		if (!*buff) {
 			XFREE(buff);
 			buff = atr_pget(thing, a->number, &aowner, &aflags, &alen);
 			source = thing;
@@ -270,16 +247,11 @@ bool eval_boolexp(dbref player, dbref thing, dbref from, BOOLEXP *b)
 		checkit = false;
 
 		if ((a->number == A_NAME) || (a->number == A_LCONTROL))
-		{
 			checkit = true;
-		}
 		else if (Read_attr(source, source, a, aowner, aflags))
-		{
 			checkit = true;
-		}
 
-		if (checkit)
-		{
+		if (checkit) {
 			preserve = save_global_regs("eval_boolexp_save");
 			buff2 = bp = XMALLOC(LBUF_SIZE, "buff2");
 			str = buff;
@@ -299,9 +271,7 @@ bool eval_boolexp(dbref player, dbref thing, dbref from, BOOLEXP *b)
 		 *
 		 */
 		if (b->sub1->type == BOOLEXP_CONST)
-		{
 			return (b->sub1->thing == player);
-		}
 
 		/**
 		 * Nope, do an attribute check
@@ -310,9 +280,7 @@ bool eval_boolexp(dbref player, dbref thing, dbref from, BOOLEXP *b)
 		a = atr_num(b->sub1->thing);
 
 		if (!a)
-		{
 			return false;
-		}
 
 		return (check_attr(player, from, a, (char *)(b->sub1)->sub1));
 
@@ -323,9 +291,7 @@ bool eval_boolexp(dbref player, dbref thing, dbref from, BOOLEXP *b)
 		 *
 		 */
 		if (b->sub1->type == BOOLEXP_CONST)
-		{
 			return (member(b->sub1->thing, Contents(player)));
-		}
 
 		/**
 		 * Nope, do an attribute check
@@ -334,16 +300,11 @@ bool eval_boolexp(dbref player, dbref thing, dbref from, BOOLEXP *b)
 		a = atr_num(b->sub1->thing);
 
 		if (!a)
-		{
 			return false;
-		}
 
-		for (obj = Contents(player); (obj != NOTHING) && (Next(obj) != obj); obj = Next(obj))
-		{
+		for (obj = Contents(player); (obj != NOTHING) && (Next(obj) != obj); obj = Next(obj)) {
 			if (check_attr(obj, from, a, (char *)(b->sub1)->sub1))
-			{
 				return true;
-			}
 		}
 		return false;
 
@@ -369,23 +330,20 @@ bool eval_boolexp(dbref player, dbref thing, dbref from, BOOLEXP *b)
  * @param key		Attribute's key
  * @return bool
  */
-bool eval_boolexp_atr(dbref player, dbref thing, dbref from, char *key)
-{
+
+bool eval_boolexp_atr(dbref player, dbref thing, dbref from, char *key) {
+
 	BOOLEXP *b = NULL;
 	int ret_value = false;
 
 	b = parse_boolexp(player, key, 1);
 
 	if (b == NULL)
-	{
 		ret_value = true;
-	}
-	else
-	{
+	else {
 		ret_value = eval_boolexp(player, thing, from, b);
 		free_boolexp(b);
 	}
-
 	return ret_value;
 }
 
@@ -399,10 +357,10 @@ bool eval_boolexp_atr(dbref player, dbref thing, dbref from, char *key)
  *
  * @param pBuf Buffer to skip whitespace in
  */
-void skip_whitespace(char **pBuf)
-{
-	while ((**pBuf) && isspace((**pBuf)))
-	{
+
+void skip_whitespace(char **pBuf) {
+
+	while ((**pBuf) && isspace((**pBuf))) {
 		(*pBuf)++;
 	}
 }
@@ -414,8 +372,9 @@ void skip_whitespace(char **pBuf)
  * @param parse_player	DBref of player triggering the test
  * @return BOOLEXP*		Boolean expression with the result of the test
  */
-BOOLEXP *test_atr(char *s, dbref parse_player)
-{
+
+BOOLEXP *test_atr(char *s, dbref parse_player) {
+
 	ATTR *attrib = NULL;
 	BOOLEXP *b = NULL;
 	char *buff = NULL, *s1 = NULL;
@@ -427,20 +386,15 @@ BOOLEXP *test_atr(char *s, dbref parse_player)
 	for (s = buff; *s && (*s != ':') && (*s != '/'); s++)
 		;
 
-	if (!*s)
-	{
+	if (!*s) {
 		XFREE(buff);
 		return ((BOOLEXP *)NULL);
 	}
 
 	if (*s == '/')
-	{
 		locktype = BOOLEXP_EVAL;
-	}
 	else
-	{
 		locktype = BOOLEXP_ATR;
-	}
 
 	*s++ = '\0';
 	/**
@@ -450,14 +404,12 @@ BOOLEXP *test_atr(char *s, dbref parse_player)
 	 * name.
 	 *
 	 */
-	if (!(attrib = atr_str(buff)))
-	{
+	if (!(attrib = atr_str(buff))) {
 		/**
 		 * Only #1 can lock on numbers
 		 *
 		 */
-		if (!God(parse_player))
-		{
+		if (!God(parse_player)) {
 			XFREE(buff);
 			return ((BOOLEXP *)NULL);
 		}
@@ -467,24 +419,20 @@ BOOLEXP *test_atr(char *s, dbref parse_player)
 		for (s1 = buff; isdigit(*s1); s1++)
 			;
 
-		if (*s1)
-		{
+		if (*s1) {
 			XFREE(buff);
 			return ((BOOLEXP *)NULL);
 		}
 
 		anum = (int)strtol(buff, (char **)NULL, 10);
 
-		if (anum <= 0)
-		{
+		if (anum <= 0) {
 			XFREE(buff);
 			return ((BOOLEXP *)NULL);
 		}
 	}
 	else
-	{
 		anum = attrib->number;
-	}
 
 	/**
 	 * made it now make the parse tree node
@@ -506,8 +454,9 @@ BOOLEXP *test_atr(char *s, dbref parse_player)
  * @param parsing_internal	Engine or player triggered?
  * @return BOOLEXP*			Boolean expression result
  */
-BOOLEXP *parse_boolexp_L(char **pBuf, dbref parse_player, bool parsing_internal)
-{
+
+BOOLEXP *parse_boolexp_L(char **pBuf, dbref parse_player, bool parsing_internal) {
+
 	BOOLEXP *b = NULL;
 	char *p = NULL, *buf = NULL;
 	MSTATE mstate;
@@ -515,20 +464,18 @@ BOOLEXP *parse_boolexp_L(char **pBuf, dbref parse_player, bool parsing_internal)
 
 	skip_whitespace(pBuf);
 
-	switch ((**pBuf))
-	{
+	switch ((**pBuf)) {
 	case '(':
 		(*pBuf)++;
 		b = parse_boolexp_E(pBuf, parse_player, parsing_internal);
 		skip_whitespace(pBuf);
 
-		if (b == TRUE_BOOLEXP || (**pBuf)++ != ')')
-		{
+		if (b == TRUE_BOOLEXP || (**pBuf)++ != ')') {
 			free_boolexp(b);
 			return TRUE_BOOLEXP;
 		}
-
 		break;
+
 	default:
 		/**
 		 * must have hit an object ref.  Load the name into our buffer
@@ -538,15 +485,12 @@ BOOLEXP *parse_boolexp_L(char **pBuf, dbref parse_player, bool parsing_internal)
 		//buf = XSTRDUP(*pBuf, "buf");
 		p = buf;
 
-		while ((**pBuf) && ((**pBuf) != AND_TOKEN) && ((**pBuf) != OR_TOKEN) && ((**pBuf) != ')'))
-		{
+		while ((**pBuf) && ((**pBuf) != AND_TOKEN) && ((**pBuf) != OR_TOKEN) && ((**pBuf) != ')')) {
 			*p++ = (**pBuf);
 			(*pBuf)++;
 		}
-
 		*p-- = '\0';
-		while (isspace(*p))
-		{
+		while (isspace(*p)) {
 			*p-- = '\0';
 		}
 
@@ -554,12 +498,10 @@ BOOLEXP *parse_boolexp_L(char **pBuf, dbref parse_player, bool parsing_internal)
 		 * check for an attribute
 		 *
 		 */
-		if ((b = test_atr(buf, parse_player)) != NULL)
-		{
+		if ((b = test_atr(buf, parse_player)) != NULL) {
 			XFREE(buf);
 			return (b);
 		}
-
 		b = alloc_boolexp();
 		b->type = BOOLEXP_CONST;
 
@@ -569,73 +511,57 @@ BOOLEXP *parse_boolexp_L(char **pBuf, dbref parse_player, bool parsing_internal)
 		 * so we skip the expensive match code.
 		 *
 		 */
-		if (!mushstate.standalone)
-		{
-			if (parsing_internal)
-			{
-				if (buf[0] != '#')
-				{
+		if (!mushstate.standalone) {
+			if (parsing_internal) {
+				if (buf[0] != '#') {
 					XFREE(buf);
 					free_boolexp(b);
 					return TRUE_BOOLEXP;
 				}
-
 				b->thing = (int)strtol(&buf[1], (char **)NULL, 10);
 
-				if (!Good_obj(b->thing))
-				{
+				if (!Good_obj(b->thing)) {
 					XFREE(buf);
 					free_boolexp(b);
 					return TRUE_BOOLEXP;
 				}
 			}
-			else
-			{
+			else {
 				save_match_state(&mstate);
 				init_match(parse_player, buf, TYPE_THING);
 				match_everything(MAT_EXIT_PARENTS);
 				b->thing = match_result();
 				restore_match_state(&mstate);
 			}
-
-			if (b->thing == NOTHING)
-			{
+			if (b->thing == NOTHING) {
 				notify_check(parse_player, parse_player, MSG_PUP_ALWAYS | MSG_ME_ALL | MSG_F_DOWN, "I don't see %s here.", buf);
 				XFREE(buf);
 				free_boolexp(b);
 				return TRUE_BOOLEXP;
 			}
-
-			if (b->thing == AMBIGUOUS)
-			{
+			if (b->thing == AMBIGUOUS) {
 				notify_check(parse_player, parse_player, MSG_PUP_ALWAYS | MSG_ME_ALL | MSG_F_DOWN, "I don't know which %s you mean!", buf);
 				XFREE(buf);
 				free_boolexp(b);
 				return TRUE_BOOLEXP;
 			}
 		}
-		else
-		{
-			if (buf[0] != '#')
-			{
+		else {
+			if (buf[0] != '#') {
 				XFREE(buf);
 				free_boolexp(b);
 				return TRUE_BOOLEXP;
 			}
-
 			b->thing = (int)strtol(&buf[1], (char **)NULL, 10);
 
-			if (b->thing < 0)
-			{
+			if (b->thing < 0) {
 				XFREE(buf);
 				free_boolexp(b);
 				return TRUE_BOOLEXP;
 			}
 		}
-
 		XFREE(buf);
 	}
-
 	return b;
 }
 
@@ -649,28 +575,25 @@ BOOLEXP *parse_boolexp_L(char **pBuf, dbref parse_player, bool parsing_internal)
  * @param parsing_internal	Engine or player triggered?
  * @return BOOLEXP*			Boolean expression result
  */
-BOOLEXP *parse_boolexp_F(char **pBuf, dbref parse_player, bool parsing_internal)
-{
+
+BOOLEXP *parse_boolexp_F(char **pBuf, dbref parse_player, bool parsing_internal) {
+
 	BOOLEXP *b2 = NULL;
 
 	skip_whitespace(pBuf);
 
-	switch ((**pBuf))
-	{
+	switch ((**pBuf)) {
 	case NOT_TOKEN:
 		(*pBuf)++;
 		b2 = alloc_boolexp();
 		b2->type = BOOLEXP_NOT;
 
-		if ((b2->sub1 = parse_boolexp_F(pBuf, parse_player, parsing_internal)) == TRUE_BOOLEXP)
-		{
+		if ((b2->sub1 = parse_boolexp_F(pBuf, parse_player, parsing_internal)) == TRUE_BOOLEXP) {
 			free_boolexp(b2);
 			return (TRUE_BOOLEXP);
 		}
 		else
-		{
 			return (b2);
-		}
 
 	case INDIR_TOKEN:
 		(*pBuf)++;
@@ -679,20 +602,16 @@ BOOLEXP *parse_boolexp_F(char **pBuf, dbref parse_player, bool parsing_internal)
 		b2->sub1 = parse_boolexp_L(pBuf, parse_player, parsing_internal);
 		b2->sub2 = NULL;
 
-		if ((b2->sub1) == TRUE_BOOLEXP)
-		{
+		if ((b2->sub1) == TRUE_BOOLEXP) {
 			free_boolexp(b2);
 			return (TRUE_BOOLEXP);
 		}
-		else if ((b2->sub1->type) != BOOLEXP_CONST)
-		{
+		else if ((b2->sub1->type) != BOOLEXP_CONST) {
 			free_boolexp(b2);
 			return (TRUE_BOOLEXP);
 		}
 		else
-		{
 			return (b2);
-		}
 
 	case IS_TOKEN:
 		(*pBuf)++;
@@ -701,20 +620,16 @@ BOOLEXP *parse_boolexp_F(char **pBuf, dbref parse_player, bool parsing_internal)
 		b2->sub1 = parse_boolexp_L(pBuf, parse_player, parsing_internal);
 		b2->sub2 = NULL;
 
-		if ((b2->sub1) == TRUE_BOOLEXP)
-		{
+		if ((b2->sub1) == TRUE_BOOLEXP) {
 			free_boolexp(b2);
 			return (TRUE_BOOLEXP);
 		}
-		else if (((b2->sub1->type) != BOOLEXP_CONST) && ((b2->sub1->type) != BOOLEXP_ATR))
-		{
+		else if (((b2->sub1->type) != BOOLEXP_CONST) && ((b2->sub1->type) != BOOLEXP_ATR)) {
 			free_boolexp(b2);
 			return (TRUE_BOOLEXP);
 		}
 		else
-		{
 			return (b2);
-		}
 
 	case CARRY_TOKEN:
 		(*pBuf)++;
@@ -723,20 +638,16 @@ BOOLEXP *parse_boolexp_F(char **pBuf, dbref parse_player, bool parsing_internal)
 		b2->sub1 = parse_boolexp_L(pBuf, parse_player, parsing_internal);
 		b2->sub2 = NULL;
 
-		if ((b2->sub1) == TRUE_BOOLEXP)
-		{
+		if ((b2->sub1) == TRUE_BOOLEXP) {
 			free_boolexp(b2);
 			return (TRUE_BOOLEXP);
 		}
-		else if (((b2->sub1->type) != BOOLEXP_CONST) && ((b2->sub1->type) != BOOLEXP_ATR))
-		{
+		else if (((b2->sub1->type) != BOOLEXP_CONST) && ((b2->sub1->type) != BOOLEXP_ATR)) {
 			free_boolexp(b2);
 			return (TRUE_BOOLEXP);
 		}
 		else
-		{
 			return (b2);
-		}
 
 	case OWNER_TOKEN:
 		(*pBuf)++;
@@ -745,20 +656,16 @@ BOOLEXP *parse_boolexp_F(char **pBuf, dbref parse_player, bool parsing_internal)
 		b2->sub1 = parse_boolexp_L(pBuf, parse_player, parsing_internal);
 		b2->sub2 = NULL;
 
-		if ((b2->sub1) == TRUE_BOOLEXP)
-		{
+		if ((b2->sub1) == TRUE_BOOLEXP) {
 			free_boolexp(b2);
 			return (TRUE_BOOLEXP);
 		}
-		else if ((b2->sub1->type) != BOOLEXP_CONST)
-		{
+		else if ((b2->sub1->type) != BOOLEXP_CONST) {
 			free_boolexp(b2);
 			return (TRUE_BOOLEXP);
 		}
 		else
-		{
 			return (b2);
-		}
 
 	default:
 		return (parse_boolexp_L(pBuf, parse_player, parsing_internal));
@@ -773,32 +680,28 @@ BOOLEXP *parse_boolexp_F(char **pBuf, dbref parse_player, bool parsing_internal)
  * @param parsing_internal	Engine or player triggered?
  * @return BOOLEXP*			Boolean expression result
  */
-BOOLEXP *parse_boolexp_T(char **pBuf, dbref parse_player, bool parsing_internal)
-{
+
+BOOLEXP *parse_boolexp_T(char **pBuf, dbref parse_player, bool parsing_internal) {
+
 	BOOLEXP *b = NULL, *b2 = NULL;
 
-	if ((b = parse_boolexp_F(pBuf, parse_player, parsing_internal)) != TRUE_BOOLEXP)
-	{
+	if ((b = parse_boolexp_F(pBuf, parse_player, parsing_internal)) != TRUE_BOOLEXP) {
 		skip_whitespace(pBuf);
 
-		if ((**pBuf) == AND_TOKEN)
-		{
+		if ((**pBuf) == AND_TOKEN) {
 			(*pBuf)++;
 			b2 = alloc_boolexp();
 			b2->type = BOOLEXP_AND;
 			b2->sub1 = b;
 			b2->sub2 = NULL;
 
-			if ((b2->sub2 = parse_boolexp_T(pBuf, parse_player, parsing_internal)) == TRUE_BOOLEXP)
-			{
+			if ((b2->sub2 = parse_boolexp_T(pBuf, parse_player, parsing_internal)) == TRUE_BOOLEXP) {
 				free_boolexp(b2);
 				return TRUE_BOOLEXP;
 			}
-
 			b = b2;
 		}
 	}
-
 	return b;
 }
 
@@ -814,28 +717,23 @@ BOOLEXP *parse_boolexp_E(char **pBuf, dbref parse_player, bool parsing_internal)
 {
 	BOOLEXP *b = NULL, *b2 = NULL;
 
-	if ((b = parse_boolexp_T(pBuf, parse_player, parsing_internal)) != TRUE_BOOLEXP)
-	{
+	if ((b = parse_boolexp_T(pBuf, parse_player, parsing_internal)) != TRUE_BOOLEXP) {
 		skip_whitespace(pBuf);
 
-		if ((**pBuf) == OR_TOKEN)
-		{
+		if ((**pBuf) == OR_TOKEN) {
 			(*pBuf)++;
 			b2 = alloc_boolexp();
 			b2->type = BOOLEXP_OR;
 			b2->sub1 = b;
 			b2->sub2 = NULL;
 
-			if ((b2->sub2 = parse_boolexp_E(pBuf, parse_player, parsing_internal)) == TRUE_BOOLEXP)
-			{
+			if ((b2->sub2 = parse_boolexp_E(pBuf, parse_player, parsing_internal)) == TRUE_BOOLEXP) {
 				free_boolexp(b2);
 				return TRUE_BOOLEXP;
 			}
-
 			b = b2;
 		}
 	}
-
 	return b;
 }
 
@@ -847,61 +745,43 @@ BOOLEXP *parse_boolexp_E(char **pBuf, dbref parse_player, bool parsing_internal)
  * @param internal	Internal check?
  * @return BOOLEXP*	Boolean expression result
  */
-BOOLEXP *parse_boolexp(dbref player, const char *buf, bool internal)
-{
+
+BOOLEXP *parse_boolexp(dbref player, const char *buf, bool internal) {
+
 	char *p = NULL, *pBuf = NULL, *pStore = NULL;
 	int num_opens = 0;
 	BOOLEXP *ret = NULL;
 	bool parsing_internal = false;
 
-	if (!internal)
-	{
+	if (!internal) {
 		/*
 		 * Don't allow funky characters in locks. Don't allow
 		 * unbalanced parentheses.
 		 */
-		for (p = (char *)buf; *p; p++)
-		{
+		for (p = (char *)buf; *p; p++) {
 			if ((*p == '\t') || (*p == '\r') || (*p == '\n') || (*p == ESC_CHAR))
-			{
 				return (TRUE_BOOLEXP);
-			}
 
 			if (*p == '(')
-			{
 				num_opens++;
-			}
-			else if (*p == ')')
-			{
+			else if (*p == ')') {
 				if (num_opens > 0)
-				{
 					num_opens--;
-				}
 				else
-				{
 					return (TRUE_BOOLEXP);
-				}
 			}
 		}
-
 		if (num_opens != 0)
-		{
 			return (TRUE_BOOLEXP);
-		}
 	}
-
 	if ((buf == NULL) || (*buf == '\0'))
-	{
 		return (TRUE_BOOLEXP);
-	}
 
 	pStore = pBuf = XMALLOC(LBUF_SIZE, "parsestore");
 	XSTRCPY(pBuf, buf);
 
 	if (!mushstate.standalone)
-	{
 		parsing_internal = internal;
-	}
 
 	ret = parse_boolexp_E(&pBuf, player, parsing_internal);
 	XFREE(pStore);
