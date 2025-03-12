@@ -36,8 +36,9 @@ STATEDATA mushstate;
  * @brief Initialize mushconf to default values.
  *
  */
-void cf_init(void)
-{
+
+void cf_init(void) {
+
     mushstate.modules_list = NULL;
     mushstate.modloaded = XMALLOC(MBUF_SIZE, "mushstate.modloaded");
     mushconf.port = 6250;
@@ -388,8 +389,9 @@ void cf_init(void)
  * @param format    Format string
  * @param ...       Variable parameter for format
  */
-void cf_log(dbref player, const char *primary, const char *secondary, char *cmd, const char *format, ...)
-{
+
+void cf_log(dbref player, const char *primary, const char *secondary, char *cmd, const char *format, ...) {
+
     va_list ap;
     char *buff = XMALLOC(LBUF_SIZE, "buff");
 
@@ -398,13 +400,9 @@ void cf_log(dbref player, const char *primary, const char *secondary, char *cmd,
     va_end(ap);
 
     if (mushstate.initializing)
-    {
         log_write(LOG_STARTUP, primary, secondary, "%s: %s", cmd, buff);
-    }
     else
-    {
         notify_check(player, player, MSG_PUP_ALWAYS | MSG_ME_ALL | MSG_F_DOWN, "%s: %s", cmd, buff);
-    }
 
     XFREE(buff);
 }
@@ -418,17 +416,15 @@ void cf_log(dbref player, const char *primary, const char *secondary, char *cmd,
  * @param failure   Did it fail?
  * @return CF_Result
  */
-CF_Result cf_status_from_succfail(dbref player, char *cmd, int success, int failure)
-{
+
+CF_Result cf_status_from_succfail(dbref player, char *cmd, int success, int failure) {
     /**
      * If any successes, return SUCCESS(0) if no failures or
      * PARTIAL_SUCCESS(1) if any failures.
      *
      */
     if (success > 0)
-    {
         return ((failure == 0) ? CF_Success : CF_Partial);
-    }
 
     /**
      * No successes. If no failures indicate nothing done. Always return
@@ -438,15 +434,10 @@ CF_Result cf_status_from_succfail(dbref player, char *cmd, int success, int fail
     if (failure == 0)
     {
         if (mushstate.initializing)
-        {
             log_write(LOG_STARTUP, "CNF", "NDATA", "%s: Nothing to set", cmd);
-        }
         else
-        {
             notify(player, "Nothing to set");
-        }
     }
-
     return CF_Failure;
 }
 
@@ -460,8 +451,8 @@ CF_Result cf_status_from_succfail(dbref player, char *cmd, int success, int fail
  * @param cmd       Command
  * @return CF_Result
  */
-CF_Result cf_const(int *vp __attribute__((unused)), char *str __attribute__((unused)), long extra __attribute__((unused)), dbref player, char *cmd)
-{
+
+CF_Result cf_const(int *vp __attribute__((unused)), char *str __attribute__((unused)), long extra __attribute__((unused)), dbref player, char *cmd) {
     /**
      * Fail on any attempt to change the value
      *
@@ -480,14 +471,13 @@ CF_Result cf_const(int *vp __attribute__((unused)), char *str __attribute__((unu
  * @param cmd       Command
  * @return CF_Result
  */
-CF_Result cf_int(int *vp, char *str, long extra, dbref player, char *cmd)
-{
+
+CF_Result cf_int(int *vp, char *str, long extra, dbref player, char *cmd) {
     /**
      * Copy the numeric value to the parameter
      *
      */
-    if ((extra > 0) && ((int)strtol(str, (char **)NULL, 10) > extra))
-    {
+    if ((extra > 0) && ((int)strtol(str, (char **)NULL, 10) > extra)) {
         cf_log(player, "CNF", "SYNTX", cmd, "Value exceeds limit of %d", extra);
         return CF_Failure;
     }
@@ -506,18 +496,16 @@ CF_Result cf_int(int *vp, char *str, long extra, dbref player, char *cmd)
  * @param cmd       Command
  * @return CF_Result
  */
-CF_Result cf_int_factor(int *vp, char *str, long extra, dbref player, char *cmd)
-{
+
+CF_Result cf_int_factor(int *vp, char *str, long extra, dbref player, char *cmd) {
     int num = (int)strtol(str, (char **)NULL, 10);
 
-    if ((extra > 0) && (num > extra))
-    {
+    if ((extra > 0) && (num > extra)) {
         cf_log(player, "CNF", "SYNTX", cmd, "Value exceeds limit of %d", extra);
         return CF_Failure;
     }
 
-    if (num == 0)
-    {
+    if (num == 0) {
         cf_log(player, "CNF", "SYNTX", cmd, "Value cannot be 0. You may want a value of 1.");
         return CF_Failure;
     }
@@ -536,24 +524,19 @@ CF_Result cf_int_factor(int *vp, char *str, long extra, dbref player, char *cmd)
  * @param cmd       Command
  * @return CF_Result
  */
-CF_Result cf_dbref(int *vp, char *str, long extra, dbref player, char *cmd)
-{
+
+CF_Result cf_dbref(int *vp, char *str, long extra, dbref player, char *cmd) {
     int num = 0;
 
     /**
      * No consistency check on initialization.
      *
      */
-    if (mushstate.initializing)
-    {
+    if (mushstate.initializing) {
         if (*str == '#')
-        {
             sscanf(str, "#%d", vp);
-        }
         else
-        {
             sscanf(str, "%d", vp);
-        }
 
         return CF_Success;
     }
@@ -564,36 +547,23 @@ CF_Result cf_dbref(int *vp, char *str, long extra, dbref player, char *cmd)
      *
      */
     if (*str == '#')
-    {
         num = (int)strtol(str + 1, (char **)NULL, 10);
-    }
     else
-    {
         num = (int)strtol(str, (char **)NULL, 10);
-    }
 
-    if (((extra == NOTHING) && (num == NOTHING)) || (Good_obj(num) && !Going(num)))
-    {
+    if (((extra == NOTHING) && (num == NOTHING)) || (Good_obj(num) && !Going(num))) {
         if (*str == '#')
-        {
             sscanf(str, "#%d", vp);
-        }
         else
-        {
             sscanf(str, "%d", vp);
-        }
 
         return CF_Success;
     }
 
     if (extra == NOTHING)
-    {
         cf_log(player, "CNF", "SYNTX", cmd, "A valid dbref, or -1, is required.");
-    }
     else
-    {
         cf_log(player, "CNF", "SYNTX", cmd, "A valid dbref is required.");
-    }
 
     return CF_Failure;
 }
@@ -608,16 +578,16 @@ CF_Result cf_dbref(int *vp, char *str, long extra, dbref player, char *cmd)
  * @param cmd
  * @return int
  */
-CF_Result cf_module(int *vp __attribute__((unused)), char *modname, long extra __attribute__((unused)), dbref player __attribute__((unused)), char *cmd __attribute__((unused)))
-{
+
+CF_Result cf_module(int *vp __attribute__((unused)), char *modname, long extra __attribute__((unused)), dbref player __attribute__((unused)), char *cmd __attribute__((unused))) {
+
     void *handle;
     void (*initptr)(void) = NULL;
     MODULE *mp = NULL;
 
     handle = dlopen_format("%s/lib%s.so", mushconf.modules_home, modname);
 
-    if (!handle)
-    {
+    if (!handle) {
         log_write(LOG_STARTUP, "CNF", "MOD", "Loading of %s/lib%s.so module failed: %s", mushconf.modules_home, modname, dlerror());
         return CF_Failure;
     }
@@ -651,12 +621,9 @@ CF_Result cf_module(int *vp __attribute__((unused)), char *modname, long extra _
     mp->cache_put_notify = (void (*)(UDB_DATA, unsigned int))dlsym_format(handle, "mod_%s_%s", modname, "cache_put_notify");
     mp->cache_del_notify = (void (*)(UDB_DATA, unsigned int))dlsym_format(handle, "mod_%s_%s", modname, "cache_del_notify");
 
-    if (!mushstate.standalone)
-    {
+    if (!mushstate.standalone) {
         if ((initptr = (void (*)(void))dlsym_format(handle, "mod_%s_%s", modname, "init")) != NULL)
-        {
             (*initptr)();
-        }
     }
 
     log_write(LOG_STARTUP, "CNF", "MOD", "Loaded module: %s", modname);
@@ -673,14 +640,13 @@ CF_Result cf_module(int *vp __attribute__((unused)), char *modname, long extra _
  * @param cmd       Command
  * @return CF_Result
  */
-CF_Result cf_bool(int *vp, char *str, long extra __attribute__((unused)), dbref player __attribute__((unused)), char *cmd __attribute__((unused)))
-{
+
+CF_Result cf_bool(int *vp, char *str, long extra __attribute__((unused)), dbref player __attribute__((unused)), char *cmd __attribute__((unused))) {
+
     *vp = (int)search_nametab(GOD, bool_names, str);
 
     if (*vp < 0)
-    {
         *vp = (long)0;
-    }
 
     return CF_Success;
 }
@@ -695,12 +661,11 @@ CF_Result cf_bool(int *vp, char *str, long extra __attribute__((unused)), dbref 
  * @param cmd       Command
  * @return int      -1 on Failure, 0 on Success
  */
-CF_Result cf_option(int *vp, char *str, long extra, dbref player, char *cmd)
-{
+CF_Result cf_option(int *vp, char *str, long extra, dbref player, char *cmd) {
+
     int i = search_nametab(GOD, (NAMETAB *)extra, str);
 
-    if (i < 0)
-    {
+    if (i < 0) {
         cf_log(player, "CNF", "NFND", cmd, "%s %s not found", "Value", str);
         return CF_Failure;
     }
@@ -719,26 +684,22 @@ CF_Result cf_option(int *vp, char *str, long extra, dbref player, char *cmd)
  * @param cmd       Command
  * @return CF_Result
  */
-CF_Result cf_string(int *vp, char *str, long extra, dbref player, char *cmd)
-{
+
+CF_Result cf_string(int *vp, char *str, long extra, dbref player, char *cmd) {
+
     int retval = CF_Success;
     /**
      * Make a copy of the string if it is not too big
      *
      */
 
-    if (strlen(str) >= (unsigned int)extra)
-    {
+    if (strlen(str) >= (unsigned int)extra) {
         str[extra - 1] = '\0';
 
         if (mushstate.initializing)
-        {
             log_write(LOG_STARTUP, "CNF", "NFND", "%s: String truncated", cmd);
-        }
         else
-        {
             notify(player, "String truncated");
-        }
 
         retval = CF_Failure;
     }
@@ -758,59 +719,46 @@ CF_Result cf_string(int *vp, char *str, long extra, dbref player, char *cmd)
  * @param cmd
  * @return CF_Result
  */
-CF_Result cf_alias(int *vp, char *str, long extra, dbref player, char *cmd)
-{
+
+CF_Result cf_alias(int *vp, char *str, long extra, dbref player, char *cmd) {
+
     int *cp = NULL, upcase = 0;
     char *p = NULL, *tokst = NULL;
     char *alias = strtok_r(str, " \t=,", &tokst);
     char *orig = strtok_r(NULL, " \t=,", &tokst);
 
-    if (orig)
-    {
+    if (orig) {
         upcase = 0;
 
         for (p = orig; *p; p++)
-        {
             *p = tolower(*p);
-        }
 
         cp = hashfind(orig, (HASHTAB *)vp);
 
-        if (cp == NULL)
-        {
+        if (cp == NULL) {
             upcase++;
 
             for (p = orig; *p; p++)
-            {
                 *p = toupper(*p);
-            }
 
             cp = hashfind(orig, (HASHTAB *)vp);
 
-            if (cp == NULL)
-            {
+            if (cp == NULL) {
                 cf_log(player, "CNF", "NFND", cmd, "%s %s not found", (char *)extra, str);
                 return CF_Failure;
             }
         }
 
-        if (upcase)
-        {
+        if (upcase) {
             for (p = alias; *p; p++)
-            {
                 *p = toupper(*p);
-            }
         }
-        else
-        {
+        else {
             for (p = alias; *p; p++)
-            {
                 *p = tolower(*p);
-            }
         }
 
-        if (((HASHTAB *)vp)->flags & HT_KEYREF)
-        {
+        if (((HASHTAB *)vp)->flags & HT_KEYREF) {
             /**
              * hashadd won't copy it, so we do that here
              *
@@ -821,8 +769,7 @@ CF_Result cf_alias(int *vp, char *str, long extra, dbref player, char *cmd)
 
         return hashadd(alias, cp, (HASHTAB *)vp, HASH_ALIAS);
     }
-    else
-    {
+    else {
         cf_log(player, "CNF", "SYNTX", cmd, "Invalid original for alias %s", alias);
         return CF_Failure;
     }
@@ -838,54 +785,41 @@ CF_Result cf_alias(int *vp, char *str, long extra, dbref player, char *cmd)
  * @param cmd       Command
  * @return CF_Result
  */
-CF_Result cf_infotext(int *vp __attribute__((unused)), char *str, long extra __attribute__((unused)), dbref player __attribute__((unused)), char *cmd __attribute__((unused)))
-{
+
+CF_Result cf_infotext(int *vp __attribute__((unused)), char *str, long extra __attribute__((unused)), dbref player __attribute__((unused)), char *cmd __attribute__((unused))) {
+
     LINKEDLIST *itp = NULL, *prev = NULL;
     char *fvalue = NULL, *tokst = NULL;
     char *fname = strtok_r(str, " \t=,", &tokst);
 
-    if (tokst)
-    {
+    if (tokst) {
         for (fvalue = tokst; *fvalue && ((*fvalue == ' ') || (*fvalue == '\t')); fvalue++)
-        {
+            ;
             /**
              * Empty loop
              *
              */
-        }
     }
     else
-    {
         fvalue = NULL;
-    }
 
-    if (!fvalue || !*fvalue)
-    {
-        for (itp = mushconf.infotext_list, prev = NULL; itp != NULL; itp = itp->next)
-        {
-            if (!strcasecmp(fname, itp->name))
-            {
+    if (!fvalue || !*fvalue) {
+        for (itp = mushconf.infotext_list, prev = NULL; itp != NULL; itp = itp->next) {
+            if (!strcasecmp(fname, itp->name)) {
                 XFREE(itp->name);
                 XFREE(itp->value);
 
                 if (prev)
-                {
                     prev->next = itp->next;
-                }
                 else
-                {
                     mushconf.infotext_list = itp->next;
-                }
 
                 XFREE(itp);
                 return CF_Partial;
             }
             else
-            {
                 prev = itp;
-            }
         }
-
         return CF_Partial;
     }
 
@@ -893,10 +827,8 @@ CF_Result cf_infotext(int *vp __attribute__((unused)), char *str, long extra __a
      * Otherwise we're setting. Replace if we had a previous value.
      *
      */
-    for (itp = mushconf.infotext_list; itp != NULL; itp = itp->next)
-    {
-        if (!strcasecmp(fname, itp->name))
-        {
+    for (itp = mushconf.infotext_list; itp != NULL; itp = itp->next) {
+        if (!strcasecmp(fname, itp->name)) {
             XFREE(itp->value);
             itp->value = XSTRDUP(fvalue, "itp->value");
             return CF_Partial;
@@ -925,8 +857,9 @@ CF_Result cf_infotext(int *vp __attribute__((unused)), char *str, long extra __a
  * @param cmd       Command
  * @return CF_Result
  */
-CF_Result cf_divert_log(int *vp, char *str, long extra, dbref player, char *cmd)
-{
+
+CF_Result cf_divert_log(int *vp, char *str, long extra, dbref player, char *cmd) {
+
     char *type_str = NULL, *file_str = NULL, *tokst = NULL;
     int f = 0, fd = 0;
     FILE *fptr = NULL;
@@ -939,8 +872,7 @@ CF_Result cf_divert_log(int *vp, char *str, long extra, dbref player, char *cmd)
     type_str = strtok_r(str, " \t", &tokst);
     file_str = strtok_r(NULL, " \t", &tokst);
 
-    if (!type_str || !file_str)
-    {
+    if (!type_str || !file_str) {
         cf_log(player, "CNF", "SYNTX", cmd, "Missing pathname to log to.");
         return CF_Failure;
     }
@@ -951,22 +883,17 @@ CF_Result cf_divert_log(int *vp, char *str, long extra, dbref player, char *cmd)
      */
     f = search_nametab(GOD, (NAMETAB *)extra, type_str);
 
-    if (f <= 0)
-    {
+    if (f <= 0) {
         cf_log(player, "CNF", "NFND", cmd, "%s %s not found", "Log diversion", str);
         return CF_Failure;
     }
 
-    for (tp = logfds_table; tp->log_flag; tp++)
-    {
+    for (tp = logfds_table; tp->log_flag; tp++) {
         if (tp->log_flag == f)
-        {
             break;
-        }
     }
 
-    if (tp == NULL)
-    {
+    if (tp == NULL) {
         /**
          * This should never happen!
          *
@@ -979,8 +906,7 @@ CF_Result cf_divert_log(int *vp, char *str, long extra, dbref player, char *cmd)
      * We shouldn't have a file open already.
      *
      */
-    if (tp->filename != NULL)
-    {
+    if (tp->filename != NULL) {
         log_write(LOG_STARTUP, "CNF", "DIVT", "Log type %s already diverted: %s", type_str, tp->filename);
         return CF_Failure;
     }
@@ -991,10 +917,8 @@ CF_Result cf_divert_log(int *vp, char *str, long extra, dbref player, char *cmd)
      */
     fptr = NULL;
 
-    for (lp = logfds_table; lp->log_flag; lp++)
-    {
-        if (lp->filename && !strcmp(file_str, lp->filename))
-        {
+    for (lp = logfds_table; lp->log_flag; lp++) {
+        if (lp->filename && !strcmp(file_str, lp->filename)) {
             fptr = lp->fileptr;
             break;
         }
@@ -1004,31 +928,25 @@ CF_Result cf_divert_log(int *vp, char *str, long extra, dbref player, char *cmd)
      * We don't have this filename yet. Open the logfile.
      *
      */
-    if (!fptr)
-    {
+    if (!fptr) {
         fptr = fopen(file_str, "w");
 
-        if (!fptr)
-        {
+        if (!fptr) {
             log_write(LOG_STARTUP, "CNF", "DIVT", "Cannot open logfile: %s", file_str);
             return CF_Failure;
         }
 
         if ((fd = fileno(fptr)) == -1)
-        {
             return CF_Failure;
-        }
 #ifdef FNDELAY
 
-        if (fcntl(fd, F_SETFL, FNDELAY) == -1)
-        {
+        if (fcntl(fd, F_SETFL, FNDELAY) == -1) {
             log_write(LOG_STARTUP, "CNF", "DIVT", "Cannot make nonblocking: %s", file_str);
             return CF_Failure;
         }
 #else
 
-        if (fcntl(fd, F_SETFL, O_NDELAY) == -1)
-        {
+        if (fcntl(fd, F_SETFL, O_NDELAY) == -1) {
             log_write(LOG_STARTUP, "CNF", "DIVT", "Cannot make nonblocking: %s", file_str);
             return -1;
         }
@@ -1055,8 +973,9 @@ CF_Result cf_divert_log(int *vp, char *str, long extra, dbref player, char *cmd)
  * @param cmd       Command
  * @return CF_Result
  */
-CF_Result cf_modify_bits(int *vp, char *str, long extra, dbref player, char *cmd)
-{
+
+CF_Result cf_modify_bits(int *vp, char *str, long extra, dbref player, char *cmd) {
+
     char *sp = NULL, *tokst = NULL;
     int f = 0, negate = 0, success = 0, failure = 0;
     /**
@@ -1066,16 +985,14 @@ CF_Result cf_modify_bits(int *vp, char *str, long extra, dbref player, char *cmd
     success = failure = 0;
     sp = strtok_r(str, " \t", &tokst);
 
-    while (sp != NULL)
-    {
+    while (sp != NULL) {
         /**
          * Check for negation
          *
          */
         negate = 0;
 
-        if (*sp == '!')
-        {
+        if (*sp == '!') {
             negate = 1;
             sp++;
         }
@@ -1086,21 +1003,15 @@ CF_Result cf_modify_bits(int *vp, char *str, long extra, dbref player, char *cmd
          */
         f = search_nametab(GOD, (NAMETAB *)extra, sp);
 
-        if (f > 0)
-        {
+        if (f > 0) {
             if (negate)
-            {
                 *vp &= ~f;
-            }
             else
-            {
                 *vp |= f;
-            }
 
             success++;
         }
-        else
-        {
+        else {
             cf_log(player, "CNF", "NFND", cmd, "%s %s not found", "Entry", str);
             failure++;
         }
@@ -1124,8 +1035,9 @@ CF_Result cf_modify_bits(int *vp, char *str, long extra, dbref player, char *cmd
  * @param negate    true: remove, false add:
  * @return bool
  */
-bool modify_xfuncs(char *fn_name, int (*fn_ptr)(dbref), EXTFUNCS **xfuncs, bool negate)
-{
+
+bool modify_xfuncs(char *fn_name, int (*fn_ptr)(dbref), EXTFUNCS **xfuncs, bool negate) {
+
     NAMEDFUNC *np = NULL, **tp = NULL;
     int i = 0;
     EXTFUNCS *xfp = *xfuncs;
@@ -1134,22 +1046,16 @@ bool modify_xfuncs(char *fn_name, int (*fn_ptr)(dbref), EXTFUNCS **xfuncs, bool 
      * If we're negating, just remove it from the list of functions.
      *
      */
-    if (negate)
-    {
+    if (negate) {
         if (!xfp)
-        {
             return false;
-        }
 
-        for (i = 0; i < xfp->num_funcs; i++)
-        {
-            if (!strcmp(xfp->ext_funcs[i]->fn_name, fn_name))
-            {
+        for (i = 0; i < xfp->num_funcs; i++) {
+            if (!strcmp(xfp->ext_funcs[i]->fn_name, fn_name)) {
                 xfp->ext_funcs[i] = NULL;
                 return true;
             }
         }
-
         return false;
     }
 
@@ -1159,10 +1065,8 @@ bool modify_xfuncs(char *fn_name, int (*fn_ptr)(dbref), EXTFUNCS **xfuncs, bool 
      */
     np = NULL;
 
-    for (i = 0; i < xfunctions.count; i++)
-    {
-        if (!strcmp(xfunctions.func[i]->fn_name, fn_name))
-        {
+    for (i = 0; i < xfunctions.count; i++) {
+        if (!strcmp(xfunctions.func[i]->fn_name, fn_name)) {
             np = xfunctions.func[i];
             break;
         }
@@ -1172,8 +1076,7 @@ bool modify_xfuncs(char *fn_name, int (*fn_ptr)(dbref), EXTFUNCS **xfuncs, bool 
      * If not, we need to allocate it.
      *
      */
-    if (!np)
-    {
+    if (!np) {
         np = (NAMEDFUNC *)XMALLOC(sizeof(NAMEDFUNC), "np");
         np->fn_name = (char *)XSTRDUP(fn_name, "np->fn_name");
         np->handler = fn_ptr;
@@ -1183,14 +1086,12 @@ bool modify_xfuncs(char *fn_name, int (*fn_ptr)(dbref), EXTFUNCS **xfuncs, bool 
      * Add it to the ones we know about.
      *
      */
-    if (xfunctions.count == 0)
-    {
+    if (xfunctions.count == 0) {
         xfunctions.func = (NAMEDFUNC **)XMALLOC(sizeof(NAMEDFUNC *), "xfunctions.func");
         xfunctions.count = 1;
         xfunctions.func[0] = np;
     }
-    else
-    {
+    else {
         tp = (NAMEDFUNC **)XREALLOC(xfunctions.func, (xfunctions.count + 1) * sizeof(NAMEDFUNC *), "tp");
         tp[xfunctions.count] = np;
         xfunctions.func = tp;
@@ -1201,8 +1102,8 @@ bool modify_xfuncs(char *fn_name, int (*fn_ptr)(dbref), EXTFUNCS **xfuncs, bool 
      * Do we have an existing list of functions? If not, this is easy.
      *
      */
-    if (!xfp)
-    {
+    if (!xfp) {
+
         xfp = (EXTFUNCS *)XMALLOC(sizeof(EXTFUNCS), "xfp");
         xfp->num_funcs = 1;
         xfp->ext_funcs = (NAMEDFUNC **)XMALLOC(sizeof(NAMEDFUNC *), "xfp->ext_funcs");
@@ -1215,10 +1116,9 @@ bool modify_xfuncs(char *fn_name, int (*fn_ptr)(dbref), EXTFUNCS **xfuncs, bool 
      * See if we have an empty slot to insert into.
      *
      */
-    for (i = 0; i < xfp->num_funcs; i++)
-    {
-        if (!xfp->ext_funcs[i])
-        {
+
+    for (i = 0; i < xfp->num_funcs; i++) {
+        if (!xfp->ext_funcs[i]) {
             xfp->ext_funcs[i] = np;
             return true;
         }
@@ -1246,8 +1146,9 @@ bool modify_xfuncs(char *fn_name, int (*fn_ptr)(dbref), EXTFUNCS **xfuncs, bool 
  * @param cmd       Command
  * @return CF_Result
  */
-CF_Result parse_ext_access(int *perms, EXTFUNCS **xperms, char *str, NAMETAB *ntab, dbref player, char *cmd)
-{
+
+CF_Result parse_ext_access(int *perms, EXTFUNCS **xperms, char *str, NAMETAB *ntab, dbref player, char *cmd) {
+
     char *sp = NULL, *tokst = NULL, *cp = NULL, *ostr = NULL, *s = NULL;
     int f = 0, negate = 0, success = 0, failure = 0, got_one = 0;
     MODULE *mp = NULL;
@@ -1260,16 +1161,14 @@ CF_Result parse_ext_access(int *perms, EXTFUNCS **xperms, char *str, NAMETAB *nt
     success = failure = 0;
     sp = strtok_r(str, " \t", &tokst);
 
-    while (sp != NULL)
-    {
+    while (sp != NULL) {
         /**
          * Check for negation
          *
          */
         negate = 0;
 
-        if (*sp == '!')
-        {
+        if (*sp == '!') {
             negate = 1;
             sp++;
         }
@@ -1280,29 +1179,22 @@ CF_Result parse_ext_access(int *perms, EXTFUNCS **xperms, char *str, NAMETAB *nt
          */
         f = search_nametab(GOD, ntab, sp);
 
-        if (f > 0)
-        {
+        if (f > 0) {
             if (negate)
-            {
                 *perms &= ~f;
-            }
             else
-            {
                 *perms |= f;
-            }
 
             success++;
         }
-        else
-        {
+        else {
             /**
              * Is this a module callout?
              *
              */
             got_one = 0;
 
-            if (!strncmp(sp, "mod_", 4))
-            {
+            if (!strncmp(sp, "mod_", 4)) {
                 /**
                  * Split it apart, see if we have anything.
                  *
@@ -1310,46 +1202,35 @@ CF_Result parse_ext_access(int *perms, EXTFUNCS **xperms, char *str, NAMETAB *nt
                 s = XMALLOC(MBUF_SIZE, "s");
                 ostr = (char *)XSTRDUP(sp, "ostr");
 
-                if (*(sp + 4) != '\0')
-                {
+                if (*(sp + 4) != '\0') {
                     cp = strchr(sp + 4, '_');
 
-                    if (cp)
-                    {
+                    if (cp) {
                         *cp++ = '\0';
 
-                        for (mp = mushstate.modules_list; mp != NULL; mp = mp->next)
-                        {
+                        for (mp = mushstate.modules_list; mp != NULL; mp = mp->next) {
                             got_one = 1;
 
-                            if (!strcmp(sp + 4, mp->modname))
-                            {
+                            if (!strcmp(sp + 4, mp->modname)) {
                                 XSNPRINTF(s, MBUF_SIZE, "mod_%s_%s", mp->modname, cp);
                                 hp = (int (*)(dbref))dlsym(mp->handle, s);
 
-                                if (!hp)
-                                {
+                                if (!hp) {
                                     cf_log(player, "CNF", "NFND", cmd, "%s %s not found", "Module function", str);
                                     failure++;
                                 }
-                                else
-                                {
+                                else {
                                     if (modify_xfuncs(ostr, hp, xperms, negate))
-                                    {
                                         success++;
-                                    }
                                     else
-                                    {
                                         failure++;
-                                    }
                                 }
 
                                 break;
                             }
                         }
 
-                        if (!got_one)
-                        {
+                        if (!got_one) {
                             cf_log(player, "CNF", "NFND", cmd, "%s %s not found", "Loaded module", str);
                             got_one = 1;
                         }
@@ -1360,8 +1241,7 @@ CF_Result parse_ext_access(int *perms, EXTFUNCS **xperms, char *str, NAMETAB *nt
                 XFREE(s);
             }
 
-            if (!got_one)
-            {
+            if (!got_one) {
                 cf_log(player, "CNF", "NFND", cmd, "%s %s not found", "Entry", str);
                 failure++;
             }
@@ -1373,7 +1253,6 @@ CF_Result parse_ext_access(int *perms, EXTFUNCS **xperms, char *str, NAMETAB *nt
          */
         sp = strtok_r(NULL, " \t", &tokst);
     }
-
     return cf_status_from_succfail(player, cmd, success, failure);
 }
 
@@ -1387,8 +1266,9 @@ CF_Result parse_ext_access(int *perms, EXTFUNCS **xperms, char *str, NAMETAB *nt
  * @param cmd       Command
  * @return CF_Result
  */
-CF_Result cf_set_flags(int *vp, char *str, long extra __attribute__((unused)), dbref player, char *cmd)
-{
+
+CF_Result cf_set_flags(int *vp, char *str, long extra __attribute__((unused)), dbref player, char *cmd) {
+
     char *sp = NULL, *tokst = NULL;
     FLAGENT *fp = NULL;
     FLAGSET *fset = NULL;
@@ -1407,40 +1287,30 @@ CF_Result cf_set_flags(int *vp, char *str, long extra __attribute__((unused)), d
     sp = strtok_r(str, " \t", &tokst);
     fset = (FLAGSET *)vp;
 
-    while (sp != NULL)
-    {
+    while (sp != NULL) {
         /**
          * Set the appropriate bit
          *
          */
         fp = (FLAGENT *)hashfind(sp, &mushstate.flags_htab);
 
-        if (fp != NULL)
-        {
-            if (success == 0)
-            {
+        if (fp != NULL) {
+            if (success == 0) {
                 (*fset).word1 = 0;
                 (*fset).word2 = 0;
                 (*fset).word3 = 0;
             }
 
             if (fp->flagflag & FLAG_WORD3)
-            {
                 (*fset).word3 |= fp->flagvalue;
-            }
             else if (fp->flagflag & FLAG_WORD2)
-            {
                 (*fset).word2 |= fp->flagvalue;
-            }
             else
-            {
                 (*fset).word1 |= fp->flagvalue;
-            }
 
             success++;
         }
-        else
-        {
+        else {
             cf_log(player, "CNF", "NFND", cmd, "%s %s not found", "Entry", str);
             failure++;
         }
@@ -1452,8 +1322,7 @@ CF_Result cf_set_flags(int *vp, char *str, long extra __attribute__((unused)), d
         sp = strtok_r(NULL, " \t", &tokst);
     }
 
-    if ((success == 0) && (failure == 0))
-    {
+    if ((success == 0) && (failure == 0)) {
         (*fset).word1 = 0;
         (*fset).word2 = 0;
         (*fset).word3 = 0;
@@ -1461,9 +1330,7 @@ CF_Result cf_set_flags(int *vp, char *str, long extra __attribute__((unused)), d
     }
 
     if (success > 0)
-    {
         return ((failure == 0) ? CF_Success : CF_Partial);
-    }
 
     return CF_Failure;
 }
@@ -1478,16 +1345,13 @@ CF_Result cf_set_flags(int *vp, char *str, long extra __attribute__((unused)), d
  * @param cmd       Command
  * @return CF_Result
  */
-CF_Result cf_badname(int *vp __attribute__((unused)), char *str, long extra, dbref player __attribute__((unused)), char *cmd __attribute__((unused)))
-{
+
+CF_Result cf_badname(int *vp __attribute__((unused)), char *str, long extra, dbref player __attribute__((unused)), char *cmd __attribute__((unused))) {
+
     if (extra)
-    {
         badname_remove(str);
-    }
     else
-    {
         badname_add(str);
-    }
 
     return CF_Success;
 }
@@ -1503,8 +1367,9 @@ CF_Result cf_badname(int *vp __attribute__((unused)), char *str, long extra, dbr
  * @param str       IP Address
  * @return in_addr_t
  */
-in_addr_t sane_inet_addr(char *str)
-{
+
+in_addr_t sane_inet_addr(char *str) {
+
     int i = 0;
     char *p = str;
 
@@ -1512,13 +1377,9 @@ in_addr_t sane_inet_addr(char *str)
         ;
 
     if (i < 4)
-    {
         return INADDR_NONE;
-    }
     else
-    {
         return inet_addr(str);
-    }
 }
 
 /**
@@ -1531,15 +1392,15 @@ in_addr_t sane_inet_addr(char *str)
  * @param cmd       Command
  * @return CF_Result
  */
-CF_Result cf_site(long **vp, char *str, long extra, dbref player, char *cmd)
-{
+
+CF_Result cf_site(long **vp, char *str, long extra, dbref player, char *cmd) {
+
     SITE *site = NULL, *last = NULL, *head = NULL;
     char *addr_txt = NULL, *mask_txt = NULL, *tokst = NULL;
     struct in_addr addr_num, mask_num;
     int mask_bits = 0;
 
-    if ((mask_txt = strchr(str, '/')) == NULL)
-    {
+    if ((mask_txt = strchr(str, '/')) == NULL) {
         /**
          * Standard IP range and netmask notation.
          *
@@ -1547,30 +1408,24 @@ CF_Result cf_site(long **vp, char *str, long extra, dbref player, char *cmd)
         addr_txt = strtok_r(str, " \t=,", &tokst);
 
         if (addr_txt)
-        {
             mask_txt = strtok_r(NULL, " \t=,", &tokst);
-        }
 
-        if (!addr_txt || !*addr_txt || !mask_txt || !*mask_txt)
-        {
+        if (!addr_txt || !*addr_txt || !mask_txt || !*mask_txt) {
             cf_log(player, "CNF", "SYNTX", cmd, "Missing host address or mask.");
             return CF_Failure;
         }
 
-        if ((addr_num.s_addr = sane_inet_addr(addr_txt)) == INADDR_NONE)
-        {
+        if ((addr_num.s_addr = sane_inet_addr(addr_txt)) == INADDR_NONE) {
             cf_log(player, "CNF", "SYNTX", cmd, "Malformed host address: %s", addr_txt);
             return CF_Failure;
         }
 
-        if (((mask_num.s_addr = sane_inet_addr(mask_txt)) == INADDR_NONE) && strcmp(mask_txt, "255.255.255.255"))
-        {
+        if (((mask_num.s_addr = sane_inet_addr(mask_txt)) == INADDR_NONE) && strcmp(mask_txt, "255.255.255.255")) {
             cf_log(player, "CNF", "SYNTX", cmd, "Malformed mask address: %s", mask_txt);
             return CF_Failure;
         }
     }
-    else
-    {
+    else {
         /**
          * RFC 1517, 1518, 1519, 1520: CIDR IP prefix notation
          *
@@ -1579,13 +1434,11 @@ CF_Result cf_site(long **vp, char *str, long extra, dbref player, char *cmd)
         *mask_txt++ = '\0';
         mask_bits = (int)strtol(mask_txt, (char **)NULL, 10);
 
-        if ((mask_bits > 32) || (mask_bits < 0))
-        {
+        if ((mask_bits > 32) || (mask_bits < 0)) {
             cf_log(player, "CNF", "SYNTX", cmd, "Mask bits (%d) in CIDR IP prefix out of range.", mask_bits);
             return CF_Failure;
         }
-        else if (mask_bits == 0)
-        {
+        else if (mask_bits == 0) {
             /**
              * can't shift by 32
              *
@@ -1593,12 +1446,9 @@ CF_Result cf_site(long **vp, char *str, long extra, dbref player, char *cmd)
             mask_num.s_addr = htonl(0);
         }
         else
-        {
             mask_num.s_addr = htonl(0xFFFFFFFFU << (32 - mask_bits));
-        }
 
-        if ((addr_num.s_addr = sane_inet_addr(addr_txt)) == INADDR_NONE)
-        {
+        if ((addr_num.s_addr = sane_inet_addr(addr_txt)) == INADDR_NONE) {
             cf_log(player, "CNF", "SYNTX", cmd, "Malformed host address: %s", addr_txt);
             return CF_Failure;
         }
@@ -1611,9 +1461,7 @@ CF_Result cf_site(long **vp, char *str, long extra, dbref player, char *cmd)
      *
      */
     if (!(site = (SITE *)XMALLOC(sizeof(SITE), "site")))
-    {
         return CF_Failure;
-    }
 
     /**
      * Initialize the site entry
@@ -1631,22 +1479,17 @@ CF_Result cf_site(long **vp, char *str, long extra, dbref player, char *cmd)
      * made while running are processed first.
      *
      */
-    if (mushstate.initializing)
-    {
+    if (mushstate.initializing) {
         if (head == NULL)
-        {
             *vp = (long *)site;
-        }
-        else
-        {
+        else {
             for (last = head; last->next; last = last->next)
                 ;
 
             last->next = site;
         }
     }
-    else
-    {
+    else {
         site->next = head;
         *vp = (long *)site;
     }
@@ -1668,40 +1511,31 @@ CF_Result cf_site(long **vp, char *str, long extra, dbref player, char *cmd)
  * @param extra     Extra field
  * @return CF_Result
  */
-CF_Result helper_cf_cf_access(CONF *tp, dbref player, int *vp, char *ap, char *cmd, long extra)
-{
+
+CF_Result helper_cf_cf_access(CONF *tp, dbref player, int *vp, char *ap, char *cmd, long extra) {
     /**
      * Cannot modify parameters set STATIC
      *
      */
     char *name = NULL;
 
-    if (tp->flags & CA_STATIC)
-    {
+    if (tp->flags & CA_STATIC) {
         notify(player, NOPERM_MESSAGE);
 
-        if (db)
-        {
+        if (db) {
             name = log_getname(player);
             log_write(LOG_CONFIGMODS, "CFG", "PERM", "%s tried to change %s access to static param: %s", name, (((long)vp) ? "read" : "write"), tp->pname);
             XFREE(name);
         }
         else
-        {
             log_write(LOG_CONFIGMODS, "CFG", "PERM", "System tried to change %s access to static param: %s", (((long)vp) ? "read" : "write"), tp->pname);
-        }
 
         return CF_Failure;
     }
-
     if ((long)vp)
-    {
         return (cf_modify_bits(&tp->rperms, ap, extra, player, cmd));
-    }
     else
-    {
         return (cf_modify_bits(&tp->flags, ap, extra, player, cmd));
-    }
 }
 
 /**
@@ -1714,8 +1548,9 @@ CF_Result helper_cf_cf_access(CONF *tp, dbref player, int *vp, char *ap, char *c
  * @param cmd       Command
  * @return CF_Result
  */
-CF_Result cf_cf_access(int *vp, char *str, long extra, dbref player, char *cmd)
-{
+
+CF_Result cf_cf_access(int *vp, char *str, long extra, dbref player, char *cmd) {
+
     CONF *tp = NULL, *ctab = NULL;
     MODULE *mp = NULL;
     char *ap = NULL;
@@ -1724,28 +1559,18 @@ CF_Result cf_cf_access(int *vp, char *str, long extra, dbref player, char *cmd)
         ;
 
     if (*ap)
-    {
         *ap++ = '\0';
-    }
 
-    for (tp = conftable; tp->pname; tp++)
-    {
+    for (tp = conftable; tp->pname; tp++) {
         if (!strcmp(tp->pname, str))
-        {
             return (helper_cf_cf_access(tp, player, vp, ap, cmd, extra));
-        }
     }
 
-    for (mp = mushstate.modules_list; mp != NULL; mp = mp->next)
-    {
-        if ((ctab = (CONF *)dlsym_format(mp->handle, "mod_%s_%s", mp->modname, "conftable")) != NULL)
-        {
-            for (tp = ctab; tp->pname; tp++)
-            {
+    for (mp = mushstate.modules_list; mp != NULL; mp = mp->next) {
+        if ((ctab = (CONF *)dlsym_format(mp->handle, "mod_%s_%s", mp->modname, "conftable")) != NULL) {
+            for (tp = ctab; tp->pname; tp++) {
                 if (!strcmp(tp->pname, str))
-                {
                     return (helper_cf_cf_access(tp, player, vp, ap, cmd, extra));
-                }
             }
         }
     }
@@ -1763,8 +1588,8 @@ CF_Result cf_cf_access(int *vp, char *str, long extra, dbref player, char *cmd)
  * @param is_raw        Raw textfile?
  * @return CF_Result
  */
-CF_Result add_helpfile(dbref player, char *confcmd, char *str, bool is_raw)
-{
+
+CF_Result add_helpfile(dbref player, char *confcmd, char *str, bool is_raw) {
 
     CMDENT *cmdp = NULL;
     HASHTAB *hashes = NULL;
@@ -1783,16 +1608,14 @@ CF_Result add_helpfile(dbref player, char *confcmd, char *str, bool is_raw)
     fpath = strtok_r(NULL, " \t=,", &tokst);
     cf_log(player, "HLP", "LOAD", confcmd, "Loading helpfile %s", basename(fpath));
 
-    if (fpath == NULL)
-    {
+    if (fpath == NULL) {
         cf_log(player, "CNF", "SYNTX", confcmd, "Missing path for helpfile %s", fcmd);
         XFREE(newstr);
         XFREE(s);
         return -1;
     }
 
-    if (fcmd[0] == '_' && fcmd[1] == '_')
-    {
+    if (fcmd[0] == '_' && fcmd[1] == '_') {
         cf_log(player, "CNF", "SYNTX", confcmd, "Helpfile %s would cause @addcommand conflict", fcmd);
         XFREE(newstr);
         XFREE(s);
@@ -1806,14 +1629,12 @@ CF_Result add_helpfile(dbref player, char *confcmd, char *str, bool is_raw)
     XSNPRINTF(s, MAXPATHLEN, "%s.txt", fpath);
     fp = fopen(s, "r");
 
-    if (fp == NULL)
-    {
+    if (fp == NULL) {
         fpath = XASPRINTF("fpath", "%s/%s", mushconf.txthome, fpath);
         XSNPRINTF(s, MAXPATHLEN, "%s.txt", fpath);
         fp = fopen(s, "r");
 
-        if (fp == NULL)
-        {
+        if (fp == NULL) {
             cf_log(player, "HLP", "LOAD", confcmd, "Helpfile %s not found", fcmd);
             XFREE(newstr);
             XFREE(s);
@@ -1827,16 +1648,14 @@ CF_Result add_helpfile(dbref player, char *confcmd, char *str, bool is_raw)
      * Rebuild Index
      *
      */
-    if (helpmkindx(player, confcmd, fpath))
-    {
+    if (helpmkindx(player, confcmd, fpath)) {
         cf_log(player, "HLP", "LOAD", confcmd, "Could not create index for helpfile %s, not loaded.", basename(fpath));
         XFREE(newstr);
         XFREE(s);
         return -1;
     }
 
-    if (strlen(fpath) > SBUF_SIZE)
-    {
+    if (strlen(fpath) > SBUF_SIZE) {
         cf_log(player, "CNF", "SYNTX", confcmd, "Helpfile %s filename too long", fcmd);
         XFREE(newstr);
         XFREE(s);
@@ -1855,9 +1674,7 @@ CF_Result add_helpfile(dbref player, char *confcmd, char *str, bool is_raw)
     cmdp->extra = mushstate.helpfiles;
 
     if (is_raw)
-    {
         cmdp->extra |= HELP_RAWHELP;
-    }
 
     hashdelete(cmdp->cmdname, &mushstate.command_htab);
     hashadd(cmdp->cmdname, (int *)cmdp, &mushstate.command_htab, 0);
@@ -1869,14 +1686,12 @@ CF_Result add_helpfile(dbref player, char *confcmd, char *str, bool is_raw)
      * We may need to grow the helpfiles table, or create it.
      *
      */
-    if (!mushstate.hfiletab)
-    {
+    if (!mushstate.hfiletab) {
         mushstate.hfiletab = (char **)XCALLOC(4, sizeof(char *), "mushstate.hfiletab");
         mushstate.hfile_hashes = (HASHTAB *)XCALLOC(4, sizeof(HASHTAB), "mushstate.hfile_hashes");
         mushstate.hfiletab_size = 4;
     }
-    else if (mushstate.helpfiles >= mushstate.hfiletab_size)
-    {
+    else if (mushstate.helpfiles >= mushstate.hfiletab_size) {
         ftab = (char **)XREALLOC(mushstate.hfiletab, (mushstate.hfiletab_size + 4) * sizeof(char *), "ftab");
         hashes = (HASHTAB *)XREALLOC(mushstate.hfile_hashes, (mushstate.hfiletab_size + 4) * sizeof(HASHTAB), "hashes");
         ftab[mushstate.hfiletab_size] = NULL;
@@ -1893,9 +1708,7 @@ CF_Result add_helpfile(dbref player, char *confcmd, char *str, bool is_raw)
      *
      */
     if (mushstate.hfiletab[mushstate.helpfiles] != NULL)
-    {
         XFREE(mushstate.hfiletab[mushstate.helpfiles]);
-    }
 
     mushstate.hfiletab[mushstate.helpfiles] = XSTRDUP(fpath, "mushstate.hfiletab[mushstate.helpfiles]");
 
@@ -1920,8 +1733,8 @@ CF_Result add_helpfile(dbref player, char *confcmd, char *str, bool is_raw)
  * @param is_raw        Raw textfile?
  * @return CF_Result
  */
-CF_Result cf_helpfile(int *vp __attribute__((unused)), char *str, long extra __attribute__((unused)), dbref player, char *cmd)
-{
+
+CF_Result cf_helpfile(int *vp __attribute__((unused)), char *str, long extra __attribute__((unused)), dbref player, char *cmd) {
     return add_helpfile(player, cmd, str, 0);
 }
 
@@ -1934,8 +1747,8 @@ CF_Result cf_helpfile(int *vp __attribute__((unused)), char *str, long extra __a
  * @param is_raw        Raw textfile?
  * @return CF_Result
  */
-CF_Result cf_raw_helpfile(int *vp __attribute__((unused)), char *str, long extra __attribute__((unused)), dbref player, char *cmd)
-{
+
+CF_Result cf_raw_helpfile(int *vp __attribute__((unused)), char *str, long extra __attribute__((unused)), dbref player, char *cmd) {
     return add_helpfile(player, cmd, str, 1);
 }
 
@@ -1949,8 +1762,9 @@ CF_Result cf_raw_helpfile(int *vp __attribute__((unused)), char *str, long extra
  * @param cmd       Command
  * @return CF_Result
  */
-CF_Result cf_include(int *vp __attribute__((unused)), char *str, long extra __attribute__((unused)), dbref player, char *cmd)
-{
+
+CF_Result cf_include(int *vp __attribute__((unused)), char *str, long extra __attribute__((unused)), dbref player, char *cmd) {
+
     FILE *fp = NULL;
     char *cp = NULL, *ap = NULL, *zp = NULL, *buf = NULL;
     int line = 0;
@@ -1963,21 +1777,17 @@ CF_Result cf_include(int *vp __attribute__((unused)), char *str, long extra __at
      */
 
     if (!mushstate.initializing)
-    {
         return CF_Failure;
-    }
 
     buf = XSTRDUP(str, "buf");
     fp = fopen(buf, "r");
 
-    if (fp == NULL)
-    {
+    if (fp == NULL) {
         XFREE(buf);
         buf = XASPRINTF("buf", "%s/%s", mushconf.config_home, str);
         fp = fopen(buf, "r");
 
-        if (fp == NULL)
-        {
+        if (fp == NULL) {
             cf_log(player, "CNF", "NFND", cmd, "%s %s not found", "Config file", str);
             return CF_Failure;
         }
@@ -1988,10 +1798,8 @@ CF_Result cf_include(int *vp __attribute__((unused)), char *str, long extra __at
     XFREE(buf);
     buf = XMALLOC(LBUF_SIZE, "buf");
 
-    if (fgets(buf, LBUF_SIZE, fp) == NULL)
-    {
-        if (!feof(fp))
-        {
+    if (fgets(buf, LBUF_SIZE, fp) == NULL) {
+        if (!feof(fp)) {
             cf_log(player, "CNF", "ERROR", "Line:", "%d - %s", line + 1, "Error while reading configuration file.");
         }
 
@@ -2002,16 +1810,12 @@ CF_Result cf_include(int *vp __attribute__((unused)), char *str, long extra __at
 
     line++;
 
-    while (!feof(fp))
-    {
+    while (!feof(fp)) {
         cp = buf;
 
-        if (*cp == '#')
-        {
-            if (fgets(buf, LBUF_SIZE, fp) == NULL)
-            {
-                if (!feof(fp))
-                {
+        if (*cp == '#') {
+            if (fgets(buf, LBUF_SIZE, fp) == NULL) {
+                if (!feof(fp)) {
                     cf_log(player, "CNF", "ERROR", "Line:", "%d - %s", line + 1, "Error while reading configuration file.");
                 }
 
@@ -2054,8 +1858,7 @@ CF_Result cf_include(int *vp __attribute__((unused)), char *str, long extra __at
          * skip over command
          *
          */
-        if (*ap)
-        {
+        if (*ap) {
             /**
              * trim command
              *
@@ -2078,16 +1881,13 @@ CF_Result cf_include(int *vp __attribute__((unused)), char *str, long extra __at
          *
          */
         if (*zp && !(isdigit(*(zp + 1)) && isspace(*(zp - 1))))
-        {
             *zp = '\0';
-        }
 
         /** zap comment, but only if it's not sitting between whitespace and a
          * digit, which traps a case like 'master_room #2'
          *
          */
-        for (zp = zp - 1; zp >= ap && isspace(*zp); zp--)
-        {
+        for (zp = zp - 1; zp >= ap && isspace(*zp); zp--) {
             /**
              * zap trailing spaces
              *
@@ -2097,18 +1897,14 @@ CF_Result cf_include(int *vp __attribute__((unused)), char *str, long extra __at
 
         cf_set(cp, ap, player);
 
-        if (fgets(buf, LBUF_SIZE, fp) == NULL)
-        {
+        if (fgets(buf, LBUF_SIZE, fp) == NULL) {
             if (!feof(fp))
-            {
                 cf_log(player, "CNF", "ERROR", "Line:", "%d - %s", line + 1, "Error while reading configuration file.");
-            }
 
             XFREE(buf);
             fclose(fp);
             return CF_Failure;
         }
-
         line++;
     }
 
@@ -2127,31 +1923,25 @@ int (*cf_interpreter)(int *, char *, long, dbref, char *);
  * @param tp
  * @return int
  */
-CF_Result helper_cf_set(char *cp, char *ap, dbref player, CONF *tp)
-{
+
+CF_Result helper_cf_set(char *cp, char *ap, dbref player, CONF *tp) {
+
     int i = 0, r = CF_Failure;
     char *buf = NULL, *buff = NULL, *name = NULL, *status = NULL;
 
     if (!mushstate.standalone && !mushstate.initializing && !check_access(player, tp->flags))
-    {
         notify(player, NOPERM_MESSAGE);
-    }
-    else
-    {
+    else {
         if (!mushstate.initializing)
-        {
             buff = XSTRDUP(ap, "buff");
-        }
 
         cf_interpreter = tp->interpreter;
         i = cf_interpreter(tp->loc, ap, tp->extra, player, cp);
 
-        if (!mushstate.initializing)
-        {
+        if (!mushstate.initializing) {
             name = log_getname(player);
 
-            switch (i)
-            {
+            switch (i) {
             case 0:
                 r = CF_Success;
                 status = XSTRDUP("Success.", "status");
@@ -2180,7 +1970,6 @@ CF_Result helper_cf_set(char *cp, char *ap, dbref player, CONF *tp)
             XFREE(buff);
         }
     }
-
     return r;
 }
 
@@ -2192,8 +1981,9 @@ CF_Result helper_cf_set(char *cp, char *ap, dbref player, CONF *tp)
  * @param player
  * @return CF_Result
  */
-CF_Result cf_set(char *cp, char *ap, dbref player)
-{
+
+CF_Result cf_set(char *cp, char *ap, dbref player) {
+
     CONF *tp = NULL, *ctab = NULL;
     MODULE *mp = NULL;
 
@@ -2204,28 +1994,18 @@ CF_Result cf_set(char *cp, char *ap, dbref player)
      */
 
     if (mushstate.standalone && strcmp(cp, "module") && strcmp(cp, "database_home"))
-    {
         return CF_Success;
-    }
 
-    for (tp = conftable; tp->pname; tp++)
-    {
+    for (tp = conftable; tp->pname; tp++) {
         if (!strcmp(tp->pname, cp))
-        {
             return (helper_cf_set(cp, ap, player, tp));
-        }
     }
 
-    for (mp = mushstate.modules_list; mp != NULL; mp = mp->next)
-    {
-        if ((ctab = (CONF *)dlsym_format(mp->handle, "mod_%s_%s", mp->modname, "conftable")) != NULL)
-        {
-            for (tp = ctab; tp->pname; tp++)
-            {
+    for (mp = mushstate.modules_list; mp != NULL; mp = mp->next) {
+        if ((ctab = (CONF *)dlsym_format(mp->handle, "mod_%s_%s", mp->modname, "conftable")) != NULL) {
+            for (tp = ctab; tp->pname; tp++) {
                 if (!strcmp(tp->pname, cp))
-                {
                     return (helper_cf_set(cp, ap, player, tp));
-                }
             }
         }
     }
@@ -2235,9 +2015,7 @@ CF_Result cf_set(char *cp, char *ap, dbref player)
      *
      */
     if (!mushstate.standalone)
-    {
         cf_log(player, "CNF", "NFND", (char *)"Set", "%s %s not found", "Config directive", cp);
-    }
 
     return CF_Failure;
 }
@@ -2251,14 +2029,13 @@ CF_Result cf_set(char *cp, char *ap, dbref player)
  * @param kw        Keyword
  * @param value     Value
  */
-void do_admin(dbref player, dbref cause __attribute__((unused)), int extra __attribute__((unused)), char *kw, char *value)
-{
+
+void do_admin(dbref player, dbref cause __attribute__((unused)), int extra __attribute__((unused)), char *kw, char *value) {
+
     int i = cf_set(kw, value, player);
 
     if ((i >= 0) && !Quiet(player))
-    {
         notify(player, "Set.");
-    }
 
     return;
 }
@@ -2269,8 +2046,9 @@ void do_admin(dbref player, dbref cause __attribute__((unused)), int extra __att
  * @param fn    Filename
  * @return int
  */
-CF_Result cf_read(char *fn)
-{
+
+CF_Result cf_read(char *fn) {
+
     int retval = cf_include(NULL, fn, 0, 0, (char *)"init");
 
     return retval;
@@ -2281,31 +2059,24 @@ CF_Result cf_read(char *fn)
  *
  * @param player DBref of player
  */
-void list_cf_access(dbref player)
-{
+
+void list_cf_access(dbref player) {
+
     CONF *tp = NULL, *ctab = NULL;
     MODULE *mp = NULL;
 
     notify(player, "Attribute                      Permission");
     notify(player, "------------------------------ ------------------------------------------------");
-    for (tp = conftable; tp->pname; tp++)
-    {
+    for (tp = conftable; tp->pname; tp++) {
         if (God(player) || check_access(player, tp->flags))
-        {
             listset_nametab(player, access_nametab, tp->flags, true, "%-30.30s ", tp->pname);
-        }
     }
 
-    for (mp = mushstate.modules_list; mp != NULL; mp = mp->next)
-    {
-        if ((ctab = (CONF *)dlsym_format(mp->handle, "mod_%s_%s", mp->modname, "conftable")) != NULL)
-        {
-            for (tp = ctab; tp->pname; tp++)
-            {
+    for (mp = mushstate.modules_list; mp != NULL; mp = mp->next) {
+        if ((ctab = (CONF *)dlsym_format(mp->handle, "mod_%s_%s", mp->modname, "conftable")) != NULL) {
+            for (tp = ctab; tp->pname; tp++) {
                 if (God(player) || check_access(player, tp->flags))
-                {
                     listset_nametab(player, access_nametab, tp->flags, true, "%-30.30s ", tp->pname);
-                }
             }
         }
     }
@@ -2317,32 +2088,27 @@ void list_cf_access(dbref player)
  *
  * @param player DBref of player
  */
-void list_cf_read_access(dbref player)
-{
+
+void list_cf_read_access(dbref player) {
+
     CONF *tp = NULL, *ctab = NULL;
     MODULE *mp = NULL;
     char *buff = NULL;
 
     notify(player, "Attribute                      Permission");
     notify(player, "------------------------------ ------------------------------------------------");
-    for (tp = conftable; tp->pname; tp++)
-    {
-        if (God(player) || check_access(player, tp->rperms))
-        {
+    for (tp = conftable; tp->pname; tp++) {
+        if (God(player) || check_access(player, tp->rperms)) {
             buff = XASPRINTF("buff", "%-30.30s ", tp->pname);
             listset_nametab(player, access_nametab, tp->rperms, true, buff);
             XFREE(buff);
         }
     }
 
-    for (mp = mushstate.modules_list; mp != NULL; mp = mp->next)
-    {
-        if ((ctab = (CONF *)dlsym_format(mp->handle, "mod_%s_%s", mp->modname, "conftable")) != NULL)
-        {
-            for (tp = ctab; tp->pname; tp++)
-            {
-                if (God(player) || check_access(player, tp->rperms))
-                {
+    for (mp = mushstate.modules_list; mp != NULL; mp = mp->next) {
+        if ((ctab = (CONF *)dlsym_format(mp->handle, "mod_%s_%s", mp->modname, "conftable")) != NULL) {
+            for (tp = ctab; tp->pname; tp++) {
+                if (God(player) || check_access(player, tp->rperms)) {
                     buff = XASPRINTF("buff", "%-30.30s ", tp->pname);
                     listset_nametab(player, access_nametab, tp->rperms, true, buff);
                     XFREE(buff);
@@ -2357,33 +2123,26 @@ void list_cf_read_access(dbref player)
  * @brief Walk all configuration tables and validate any dbref values.
  *
  */
-void cf_verify(void)
-{
+
+void cf_verify(void) {
+
     CONF *tp = NULL, *ctab = NULL;
     MODULE *mp = NULL;
 
-    for (tp = conftable; tp->pname; tp++)
-    {
-        if (tp->interpreter == cf_dbref)
-        {
-            if (!(((tp->extra == NOTHING) && (*(tp->loc) == NOTHING)) || (Good_obj(*(tp->loc)) && !Going(*(tp->loc)))))
-            {
+    for (tp = conftable; tp->pname; tp++) {
+        if (tp->interpreter == cf_dbref) {
+            if (!(((tp->extra == NOTHING) && (*(tp->loc) == NOTHING)) || (Good_obj(*(tp->loc)) && !Going(*(tp->loc))))) {
                 log_write(LOG_ALWAYS, "CNF", "VRFY", "%s #%d is invalid. Reset to #%d.", tp->pname, *(tp->loc), tp->extra);
                 *(tp->loc) = (dbref)tp->extra;
             }
         }
     }
 
-    for (mp = mushstate.modules_list; mp != NULL; mp = mp->next)
-    {
-        if ((ctab = (CONF *)dlsym_format(mp->handle, "mod_%s_%s", mp->modname, "conftable")) != NULL)
-        {
-            for (tp = ctab; tp->pname; tp++)
-            {
-                if (tp->interpreter == cf_dbref)
-                {
-                    if (!(((tp->extra == NOTHING) && (*(tp->loc) == NOTHING)) || (Good_obj(*(tp->loc)) && !Going(*(tp->loc)))))
-                    {
+    for (mp = mushstate.modules_list; mp != NULL; mp = mp->next) {
+        if ((ctab = (CONF *)dlsym_format(mp->handle, "mod_%s_%s", mp->modname, "conftable")) != NULL) {
+            for (tp = ctab; tp->pname; tp++) {
+                if (tp->interpreter == cf_dbref) {
+                    if (!(((tp->extra == NOTHING) && (*(tp->loc) == NOTHING)) || (Good_obj(*(tp->loc)) && !Going(*(tp->loc))))) {
                         log_write(LOG_ALWAYS, "CNF", "VRFY", "%s #%d is invalid. Reset to #%d.", tp->pname, *(tp->loc), tp->extra);
                         *(tp->loc) = (dbref)tp->extra;
                     }
@@ -2401,37 +2160,33 @@ void cf_verify(void)
  * @param bufc      Output buffer tracker
  * @param tp        Config parameter
  */
-void helper_cf_display(dbref player, char *buff, char **bufc, CONF *tp)
-{
+
+void helper_cf_display(dbref player, char *buff, char **bufc, CONF *tp) {
+
     NAMETAB *opt = NULL;
 
-    if (!check_access(player, tp->rperms))
-    {
+    if (!check_access(player, tp->rperms)) {
         SAFE_NOPERM(buff, bufc);
         return;
     }
 
-    if ((tp->interpreter == cf_bool) || (tp->interpreter == cf_int) || (tp->interpreter == cf_int_factor) || (tp->interpreter == cf_const))
-    {
+    if ((tp->interpreter == cf_bool) || (tp->interpreter == cf_int) || (tp->interpreter == cf_int_factor) || (tp->interpreter == cf_const)) {
         SAFE_LTOS(buff, bufc, *(tp->loc), LBUF_SIZE);
         return;
     }
 
-    if (tp->interpreter == cf_string)
-    {
+    if (tp->interpreter == cf_string) {
         SAFE_LB_STR(*((char **)tp->loc), buff, bufc);
         return;
     }
 
-    if (tp->interpreter == cf_dbref)
-    {
+    if (tp->interpreter == cf_dbref) {
         SAFE_LB_CHR('#', buff, bufc);
         SAFE_LTOS(buff, bufc, *(tp->loc), LBUF_SIZE);
         return;
     }
 
-    if (tp->interpreter == cf_option)
-    {
+    if (tp->interpreter == cf_option) {
         opt = find_nametab_ent_flag(GOD, (NAMETAB *)tp->extra, *(tp->loc));
         SAFE_LB_STR((opt ? opt->name : "*UNKNOWN*"), buff, bufc);
         return;
@@ -2449,28 +2204,23 @@ void helper_cf_display(dbref player, char *buff, char **bufc, CONF *tp)
  * @param buff          Output buffer
  * @param bufc          Output buffer tracker
  */
-void cf_display(dbref player, char *param_name, char *buff, char **bufc)
-{
+
+void cf_display(dbref player, char *param_name, char *buff, char **bufc) {
+
     CONF *tp = NULL, *ctab = NULL;
     MODULE *mp = NULL;
 
-    for (tp = conftable; tp->pname; tp++)
-    {
-        if (!strcasecmp(tp->pname, param_name))
-        {
+    for (tp = conftable; tp->pname; tp++) {
+        if (!strcasecmp(tp->pname, param_name)) {
             helper_cf_display(player, buff, bufc, tp);
             return;
         }
     }
 
-    for (mp = mushstate.modules_list; mp != NULL; mp = mp->next)
-    {
-        if ((ctab = (CONF *)dlsym_format(mp->handle, "mod_%s_%s", mp->modname, "conftable")) != NULL)
-        {
-            for (tp = ctab; tp->pname; tp++)
-            {
-                if (!strcasecmp(tp->pname, param_name))
-                {
+    for (mp = mushstate.modules_list; mp != NULL; mp = mp->next) {
+        if ((ctab = (CONF *)dlsym_format(mp->handle, "mod_%s_%s", mp->modname, "conftable")) != NULL) {
+            for (tp = ctab; tp->pname; tp++) {
+                if (!strcasecmp(tp->pname, param_name)) {
                     helper_cf_display(player, buff, bufc, tp);
                     return;
                 }
@@ -2486,33 +2236,27 @@ void cf_display(dbref player, char *param_name, char *buff, char **bufc)
  *
  * @param player DBref of player
  */
-void list_options(dbref player)
-{
+
+void list_options(dbref player) {
+
     CONF *tp = NULL, *ctab = NULL;
     MODULE *mp = NULL;
     bool draw_header = false;
 
     notify(player, "Global Options            S Description");
     notify(player, "------------------------- - ---------------------------------------------------");
-    for (tp = conftable; tp->pname; tp++)
-    {
-        if (((tp->interpreter == cf_const) || (tp->interpreter == cf_bool)) && (check_access(player, tp->rperms)))
-        {
+    for (tp = conftable; tp->pname; tp++) {
+        if (((tp->interpreter == cf_const) || (tp->interpreter == cf_bool)) && (check_access(player, tp->rperms))) {
             raw_notify(player, "%-25s %c %s?", tp->pname, (*(tp->loc) ? 'Y' : 'N'), (tp->extra ? (char *)tp->extra : ""));
         }
     }
 
-    for (mp = mushstate.modules_list; mp != NULL; mp = mp->next)
-    {
-        if ((ctab = (CONF *)dlsym_format(mp->handle, "mod_%s_%s", mp->modname, "conftable")) != NULL)
-        {
+    for (mp = mushstate.modules_list; mp != NULL; mp = mp->next) {
+        if ((ctab = (CONF *)dlsym_format(mp->handle, "mod_%s_%s", mp->modname, "conftable")) != NULL) {
             draw_header = false;
-            for (tp = ctab; tp->pname; tp++)
-            {
-                if (((tp->interpreter == cf_const) || (tp->interpreter == cf_bool)) && (check_access(player, tp->rperms)))
-                {
-                    if (!draw_header)
-                    {
+            for (tp = ctab; tp->pname; tp++) {
+                if (((tp->interpreter == cf_const) || (tp->interpreter == cf_bool)) && (check_access(player, tp->rperms))) {
+                    if (!draw_header) {
                         raw_notify(player, "\nModule %-18.18s S Description", mp->modname);
                         notify(player, "------------------------- - ---------------------------------------------------");
                         draw_header = true;
@@ -2574,8 +2318,8 @@ lt_dlhandle lt_dlopen_format(const char *filename, ...)
 }
 */
 
-void *dlopen_format(const char *filename, ...)
-{
+void *dlopen_format(const char *filename, ...) {
+
     int n = 0;
     size_t size = 0;
     char *p = NULL;
@@ -2587,23 +2331,18 @@ void *dlopen_format(const char *filename, ...)
     va_end(ap);
 
     if (n < 0)
-    {
         return NULL;
-    }
 
     size = (size_t)n + 1;
     p = malloc(size);
     if (p == NULL)
-    {
         return NULL;
-    }
 
     va_start(ap, filename);
     n = vsnprintf(p, size, filename, ap);
     va_end(ap);
 
-    if (n < 0)
-    {
+    if (n < 0) {
         free(p);
         return NULL;
     }
@@ -2663,8 +2402,9 @@ void *lt_dlsym_format(lt_dlhandle place, const char *symbol, ...)
     return dlsym;
 }
 */
-void *dlsym_format(void *place, const char *symbol, ...)
-{
+
+void *dlsym_format(void *place, const char *symbol, ...) {
+
     int n = 0;
     size_t size = 0;
     char *p = NULL;
@@ -2676,23 +2416,18 @@ void *dlsym_format(void *place, const char *symbol, ...)
     va_end(ap);
 
     if (n < 0)
-    {
         return NULL;
-    }
 
     size = (size_t)n + 1;
     p = malloc(size);
     if (p == NULL)
-    {
         return NULL;
-    }
 
     va_start(ap, symbol);
     n = vsnprintf(p, size, symbol, ap);
     va_end(ap);
 
-    if (n < 0)
-    {
+    if (n < 0) {
         free(p);
         return NULL;
     }
